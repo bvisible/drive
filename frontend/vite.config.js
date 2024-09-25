@@ -28,12 +28,15 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true,
+    sourcemap: false,
     outDir: `../${path.basename(path.resolve(".."))}/public/frontend`,
     emptyOutDir: true,
     target: "esnext",
     commonjsOptions: {
       include: [/tailwind.config.js/, /node_modules/],
+    },
+    rollupOptions: {
+      maxParallelFileOps: 2,
     },
   },
   optimizeDeps: {
