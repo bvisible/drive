@@ -13,7 +13,6 @@ import App from "./App.vue"
 import emitter from "./event-bus"
 import "./index.css"
 import VueTippy from "vue-tippy"
-import { initSocket, RealTimeHandler } from "./socket"
 
 setConfig("resourceFetcher", frappeRequest)
 const app = createApp(App)
@@ -22,12 +21,8 @@ app.config.globalProperties.emitter = emitter
 app.provide("emitter", emitter)
 app.use(router)
 app.use(store)
-
-app.use(FrappeUI, { socketio: false })
-const socket = initSocket()
-const realtime = new RealTimeHandler(socket)
-app.provide("realtime", realtime)
-app.config.globalProperties.$realtime = realtime
+app.use(FrappeUI)
+app.use(resourcesPlugin)
 app.directive("on-outside-click", onOutsideClickDirective)
 app.use(
   VueTippy,

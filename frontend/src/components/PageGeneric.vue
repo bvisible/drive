@@ -4,13 +4,12 @@
       v-if="$resources.folderContents.error"
       :error="$resources.folderContents.error"
     />
+
     <GridView
       v-else-if="$store.state.view === 'grid'"
       :folder-contents="folderItems"
       :selected-entities="selectedEntities"
       :override-can-load-more="overrideCanLoadMore"
-      :folders="folders"
-      :files="files"
       @entity-selected="(selected) => (selectedEntities = selected)"
       @open-entity="(entity) => openEntity(entity)"
       @show-entity-context="(event) => toggleEntityContext(event)"
@@ -227,7 +226,6 @@ import Preview from "./EspressoIcons/Preview.vue"
 import Trash from "./EspressoIcons/Trash.vue"
 import NewFile from "./EspressoIcons/NewFile.vue"
 import { toast } from "../utils/toasts.js"
-import { capture } from "@/telemetry"
 
 export default {
   name: "PageGeneric",
@@ -700,25 +698,6 @@ export default {
         ].filter((item) => item.isEnabled())
       }
     },
-    folders() {
-      return this.folderItems
-        ? this.folderItems.filter((x) => x.is_group === 1)
-        : []
-    },
-    files() {
-      if (this.foldersBefore) {
-        return this.folderItems
-          ? this.folderItems.filter((x) => x.is_group === 0)
-          : []
-      }
-      return this.folderItems
-    },
-    foldersBefore() {
-      return this.$store.state.foldersBefore
-    },
-    displayOrderedEntities() {
-      return this.folders.concat(this.files)
-    },
   },
   watch: {
     filters: {
@@ -792,7 +771,6 @@ export default {
       false
     )
     this.$store.commit("setHasWriteAccess", true)
-    window.addEventListener("scroll", this.onScroll)
   },
   unmounted() {
     this.folderItems = []
@@ -801,16 +779,8 @@ export default {
     this.$store.commit("setHasWriteAccess", false)
     window.removeEventListener("keydown", this.pasteListener)
     window.removeEventListener("keydown", this.deleteListener)
-    window.removeEventListener("scroll", this.onScroll)
   },
   methods: {
-    onScroll() {
-      const position = window.pageYOffset
-      this.$store.dispatch("saveScrollPosition", {
-        route: this.$route.fullPath,
-        position,
-      })
-    },
     fetchNextPage() {
       this.pageOffset = this.pageOffset + this.pageLength
       this.$resources.folderContents.fetch().then((data) => {
@@ -829,7 +799,6 @@ export default {
           offset: 0,
           limit: this.pageLength,
           is_active: this.isActive,
-          folders_first: this.foldersBefore,
           recents_only: this.recents,
           favourites_only: this.favourites,
           file_kind_list: JSON.stringify(this.filters),
@@ -865,7 +834,6 @@ export default {
           order_by: this.orderBy,
           offset: entityOriginalOffset,
           limit: this.pageLength,
-          folders_first: this.foldersBefore,
           is_active: this.isActive,
           recents_only: this.recents,
           favourites_only: this.favourites,
@@ -890,20 +858,10 @@ export default {
           params: { entityName: entity.name },
         })
       } else if (entity.document) {
-        if (this.$store.state.editorNewTab) {
-          window.open(
-            this.$router.resolve({
-              name: "Document",
-              params: { entityName: entity.name },
-            }).href,
-            "_blank"
-          )
-        } else {
-          this.$router.push({
-            name: "Document",
-            params: { entityName: entity.name },
-          })
-        }
+        this.$router.push({
+          name: "Document",
+          params: { entityName: entity.name },
+        })
       } else {
         this.$router.push({
           name: "File",
@@ -961,21 +919,10 @@ export default {
         content: null,
         parent: this.$store.state.currentFolderID,
       })
-      capture("new_document_created")
-      if (this.$store.state.editorNewTab) {
-        window.open(
-          this.$router.resolve({
-            name: "Document",
-            params: { entityName: this.previewEntity.name },
-          }).href,
-          "_blank"
-        )
-      } else {
-        this.$router.push({
-          name: "Document",
-          params: { entityName: this.previewEntity.name },
-        })
-      }
+      this.$router.push({
+        name: "Document",
+        params: { entityName: this.previewEntity.name },
+      })
     },
   },
   resources: {
@@ -996,7 +943,6 @@ export default {
           order_by: this.orderBy,
           offset: this.pageOffset,
           limit: this.pageLength,
-          folders_first: this.foldersBefore,
           is_active: this.isActive,
           recents_only: this.recents,
           favourites_only: this.favourites,

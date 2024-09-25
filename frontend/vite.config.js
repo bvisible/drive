@@ -1,11 +1,26 @@
 import { defineConfig } from "vite"
 import vue from "@vitejs/plugin-vue"
 import path from "path"
-import frappeui from "frappe-ui/vite"
+import { webserver_port } from "../../../sites/common_site_config.json"
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), frappeui()],
+  plugins: [vue()],
+  server: {
+    host: true,
+    port: 8080,
+    proxy: {
+      "^/(app|login|api|assets|files)": {
+        // Localhost resolution changes in Node 17
+        target: `http://127.0.0.1:${webserver_port}`,
+        ws: true,
+        router: function (req) {
+          const site_name = req.headers.host.split(":")[0]
+          return `http://${site_name}:${webserver_port}`
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),

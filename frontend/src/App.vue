@@ -15,7 +15,7 @@
         class="flex flex-col h-full overflow-hidden sm:flex-row"
       >
         <Sidebar v-if="isLoggedIn" class="hidden sm:block" />
-        <div id="dropTarget" class="h-full w-full overflow-hidden">
+        <div id="dropzoneElement" class="h-full w-full overflow-hidden">
           <Navbar
             :mobile-sidebar-is-open="showMobileSidebar"
             @toggle-mobile-sidebar="showMobileSidebar = !showMobileSidebar"
@@ -23,7 +23,7 @@
           <div class="flex w-full h-full overflow-hidden">
             <!-- Find a better way to handle the height overflow here (52px is the Navbar) -->
             <div
-              class="flex w-full h-[calc(100dvh-105px)] sm:h-[calc(100dvh-52px)] overflow-hidden"
+              class="flex w-full h-[calc(100vh-88px)] sm:h-[calc(100vh-52px)] overflow-hidden"
             >
               <router-view :key="$route.fullPath" v-slot="{ Component }">
                 <component :is="Component" id="currentPage" ref="currentPage" />
@@ -32,7 +32,7 @@
             <InfoSidebar v-if="hideInfoSideBar" />
           </div>
         </div>
-        <BottomBar v-if="isLoggedIn" class="fixed bottom-0 w-full sm:hidden" />
+        <BottomBar v-if="isLoggedIn" class="block sm:hidden" />
       </div>
       <!-- Auth -->
       <router-view v-else />
@@ -64,7 +64,6 @@ import MoveDialog from "./components/MoveDialog.vue"
 import SearchPopup from "./components/SearchPopup.vue"
 import FileUploader from "./components/FileUploader.vue"
 import BottomBar from "./components/BottomBar.vue"
-import { init as initTelemetry } from "@/telemetry"
 
 export default {
   name: "App",
@@ -113,12 +112,11 @@ export default {
       return true
     },
   },
-  async mounted() {
+  mounted() {
     this.addKeyboardShortcut()
     this.emitter.on("showSearchPopup", (data) => {
       this.showSearchPopup = data
     })
-    await initTelemetry()
   },
   methods: {
     handleDefaultContext(event) {

@@ -1,12 +1,11 @@
 <template>
-  <div id="fileSelection" class="hidden" />
+  <div class="hidden" />
 </template>
 <script setup>
 import { ref, onMounted, onBeforeUnmount, inject, watch } from "vue"
 import { useStore } from "vuex"
 import { useRoute } from "vue-router"
 import Dropzone from "dropzone"
-import { capture } from "@/telemetry"
 
 const store = useStore()
 const route = useRoute()
@@ -94,22 +93,17 @@ function NonMergeMode(file) {
 }
 
 onMounted(() => {
-  dropzone.value = new Dropzone("div#dropTarget", {
+  dropzone.value = new Dropzone("div#dropzoneElement", {
     paramName: "file",
     parallelUploads: 1,
     autoProcessQueue: false,
-    clickable: "#fileSelection",
-    disablePreviews: true,
-    createImageThumbnails: false,
-    retryChunksLimit: 5,
-    previewsContainer: "#dropTarget",
-    hiddenInputContainer: "#fileSelection",
+    clickable: true,
+    previewsContainer: "#dropzoneElement",
     uploadMultiple: false,
     chunking: true,
     retryChunks: true,
     forceChunking: true,
     url: "/api/method/drive.api.files.upload_file",
-    dictUploadCanceled: "Upload canceled by user",
     maxFilesize: 10 * 1024, // 10GB
     timeout: 120000, // 2 minutes
     chunkSize: 20 * 1024 * 1024, // 20MB
@@ -188,30 +182,27 @@ onMounted(() => {
       progress: progress,
     })
   })
-  dropzone.value.on("error", function (file, response) {
-    let message
-    if (typeof response === Object) {
-      message = JSON.parse(JSON.parse(response._server_messages)[0]).message
+  dropzone.value.on("error", function (file, message) {
+    let error_message
+    if (message._server_messages) {
+      error_message = JSON.parse(message._server_messages)
+        .map((element) => JSON.parse(element).message)
+        .join("\n")
     }
-    message = message || response || "Upload failed"
+    error_message = message || error_message || "Upload failed"
     store.commit("updateUpload", {
       uuid: file.upload.uuid,
-      error: message,
+      error: error_message,
     })
   })
   dropzone.value.on("success", function (file, response) {
     uploadResponse.value = response.message
-    store.commit("updateUpload", {
-      uuid: file.upload.uuid,
-      response: response.message,
-    })
   })
   dropzone.value.on("complete", function (file) {
     store.commit("updateUpload", {
       uuid: file.upload.uuid,
       completed: true,
     })
-    capture("new_file_uploaded")
   })
   /*   emitter.on("directUpload", (file) => {
     dropzone.value.addFile(file)
