@@ -27,7 +27,8 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     outDir: `../${path.basename(path.resolve(".."))}/public/frontend`,
     emptyOutDir: true,
     target: "esnext",
