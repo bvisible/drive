@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS=--max-old-space-size=4096 vite --host",
-    "build": "[ -f ../drive/public/frontend/index.html ] && echo 'Assets already built - skipping (use build:force to rebuild)' || NODE_OPTIONS=--max-old-space-size=4096 vite build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "build:force": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "preview": "NODE_OPTIONS=--max-old-space-size=4096 vite preview",
     "precommit": "pretty-quick --staged",
