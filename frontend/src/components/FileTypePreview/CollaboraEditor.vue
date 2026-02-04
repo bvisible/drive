@@ -37,6 +37,7 @@
       ref="editorFrame"
       name="collabora-frame"
       class="editor-frame"
+      :class="{ 'with-sidebar': showNoraSidebar }"
       :title="fileName"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
       allow="clipboard-read; clipboard-write"
@@ -45,10 +46,10 @@
 
     <!-- Nora AI Assistant floating button -->
     <button
-      v-if="!loading && !error"
+      v-if="!loading && !error && !showNoraSidebar"
       class="nora-fab"
       :title="__('Nora - AI Assistant')"
-      @click="emit('nora-click')"
+      @click="toggleNoraSidebar"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="8" width="18" height="12" rx="2"/>
@@ -59,6 +60,83 @@
       </svg>
       <span class="nora-fab-label">Nora</span>
     </button>
+
+    <!-- Nora Chat Sidebar -->
+    <div v-if="showNoraSidebar" class="nora-sidebar">
+      <!-- Header -->
+      <div class="nora-sidebar-header">
+        <div class="nora-sidebar-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="8" width="18" height="12" rx="2"/>
+            <circle cx="8" cy="14" r="2"/>
+            <circle cx="16" cy="14" r="2"/>
+            <path d="M9 4v4"/>
+            <path d="M15 4v4"/>
+          </svg>
+          <span>Nora</span>
+        </div>
+        <button class="nora-sidebar-close" @click="toggleNoraSidebar" :title="__('Close')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Messages area -->
+      <div class="nora-sidebar-messages" ref="messagesContainer">
+        <div v-if="chatMessages.length === 0" class="nora-welcome">
+          <div class="nora-welcome-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="8" width="18" height="12" rx="2"/>
+              <circle cx="8" cy="14" r="2"/>
+              <circle cx="16" cy="14" r="2"/>
+              <path d="M9 4v4"/>
+              <path d="M15 4v4"/>
+            </svg>
+          </div>
+          <h3>{{ __('Hello! I am Nora') }}</h3>
+          <p>{{ __('Your AI assistant. How can I help you with this document?') }}</p>
+        </div>
+        <div
+          v-for="(msg, index) in chatMessages"
+          :key="index"
+          class="nora-message"
+          :class="msg.role"
+        >
+          <div class="nora-message-content">{{ msg.content }}</div>
+        </div>
+        <div v-if="isTyping" class="nora-message assistant">
+          <div class="nora-typing">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="nora-sidebar-input">
+        <textarea
+          v-model="userInput"
+          :placeholder="__('Ask Nora...')"
+          @keydown.enter.prevent="sendMessage"
+          rows="1"
+          ref="inputField"
+        ></textarea>
+        <button
+          class="nora-send-btn"
+          @click="sendMessage"
+          :disabled="!userInput.trim() || isTyping"
+          :title="__('Send')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -83,9 +161,19 @@ const accessToken = ref('')
 const accessTokenTtl = ref(0)
 const fileName = ref('')
 
+// Nora Chat State
+const showNoraSidebar = ref(false)
+const chatMessages = ref([])
+const userInput = ref('')
+const isTyping = ref(false)
+const selectedText = ref('')
+const pendingSelectionCallback = ref(null)
+
 // Refs
 const wopiForm = ref(null)
 const editorFrame = ref(null)
+const messagesContainer = ref(null)
+const inputField = ref(null)
 
 // Translation helper
 const __ = (text) => {
@@ -179,6 +267,20 @@ function handlePostMessage(event) {
           emit('nora-click')
         }
         break
+
+      // Handle text selection response from Collabora
+      case 'Action_Selection':
+      case 'Get_Selection':
+        console.log('[Collabora] Selection received:', data.Values)
+        if (data.Values && data.Values.text !== undefined) {
+          selectedText.value = data.Values.text || ''
+          // Call the pending callback if any
+          if (pendingSelectionCallback.value) {
+            pendingSelectionCallback.value(selectedText.value)
+            pendingSelectionCallback.value = null
+          }
+        }
+        break
     }
   }
 }
@@ -220,6 +322,242 @@ function save() {
   })
 }
 
+// ==========================================
+// Nora AI Document Interaction Functions
+// ==========================================
+
+/**
+ * Insert text at the current cursor position in Collabora
+ * @param {string} text - Text to insert
+ */
+function insertText(text) {
+  if (!text) return
+  console.log('[Nora] Inserting text:', text.substring(0, 50) + '...')
+  sendCommand({
+    MessageId: 'Action_Paste',
+    Values: {
+      Mimetype: 'text/plain;charset=utf-8',
+      Data: text
+    }
+  })
+}
+
+/**
+ * Get the currently selected text in Collabora
+ * @returns {Promise<string>} - The selected text
+ */
+function getSelection() {
+  return new Promise((resolve) => {
+    // Set callback to receive the selection
+    pendingSelectionCallback.value = resolve
+
+    // Request selection from Collabora
+    console.log('[Nora] Requesting text selection...')
+    sendCommand({
+      MessageId: 'Action_GetTextSelection',
+      Values: {
+        Mimetype: 'text/plain;charset=utf-8'
+      }
+    })
+
+    // Timeout after 2 seconds
+    setTimeout(() => {
+      if (pendingSelectionCallback.value === resolve) {
+        console.log('[Nora] Selection request timeout')
+        pendingSelectionCallback.value = null
+        resolve('')
+      }
+    }, 2000)
+  })
+}
+
+/**
+ * Replace the current selection with new text
+ * @param {string} text - Text to replace selection with
+ */
+function replaceSelection(text) {
+  if (!text) return
+  console.log('[Nora] Replacing selection with:', text.substring(0, 50) + '...')
+  // Paste will replace any selected text
+  sendCommand({
+    MessageId: 'Action_Paste',
+    Values: {
+      Mimetype: 'text/plain;charset=utf-8',
+      Data: text
+    }
+  })
+}
+
+/**
+ * Execute a UNO command (bold, italic, etc.)
+ * @param {string} command - UNO command (e.g., '.uno:Bold', '.uno:Italic')
+ */
+function executeUnoCommand(command) {
+  console.log('[Nora] Executing UNO command:', command)
+  sendCommand({
+    MessageId: 'Send_UNO_Command',
+    Values: {
+      Command: command
+    }
+  })
+}
+
+/**
+ * Get document content (export as text) - for AI context
+ * Note: This exports the full document, use sparingly
+ */
+function exportDocument() {
+  console.log('[Nora] Requesting document export...')
+  sendCommand({
+    MessageId: 'Get_Export',
+    Values: {
+      Format: 'txt'
+    }
+  })
+}
+
+// Toggle Nora sidebar
+function toggleNoraSidebar() {
+  showNoraSidebar.value = !showNoraSidebar.value
+  if (showNoraSidebar.value) {
+    nextTick(() => {
+      if (inputField.value) {
+        inputField.value.focus()
+      }
+    })
+  }
+}
+
+// Send message to Nora via Raven infrastructure
+async function sendMessage() {
+  const message = userInput.value.trim()
+  if (!message || isTyping.value) return
+
+  // Add user message
+  chatMessages.value.push({
+    role: 'user',
+    content: message
+  })
+  userInput.value = ''
+  isTyping.value = true
+
+  // Scroll to bottom
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+  })
+
+  try {
+    // Get current selection before sending (for context)
+    let currentSelection = ''
+    try {
+      currentSelection = await getSelection()
+    } catch (e) {
+      console.log('[Nora] Could not get selection:', e)
+    }
+
+    // Call the Nora Collabora handler API (routes through OpenClaw)
+    const response = await fetch('/api/method/nora.api.collabora_handler.handle_message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Frappe-CSRF-Token': window.csrf_token
+      },
+      body: JSON.stringify({
+        message: message,
+        file_id: props.fileId,
+        selection: currentSelection,
+        context: JSON.stringify(chatMessages.value.slice(-10))
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      const result = data.message
+
+      // Add AI response to chat
+      chatMessages.value.push({
+        role: 'assistant',
+        content: result.response || __('No response received.')
+      })
+
+      // Execute Collabora actions if any
+      if (result.collabora_actions && result.collabora_actions.length > 0) {
+        console.log('[Nora] Executing', result.collabora_actions.length, 'Collabora actions')
+        for (const action of result.collabora_actions) {
+          await executeCollaboraAction(action)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Nora] Error:', err)
+    chatMessages.value.push({
+      role: 'assistant',
+      content: __('Sorry, I encountered an error. Please try again.')
+    })
+  } finally {
+    isTyping.value = false
+    nextTick(() => {
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      }
+    })
+  }
+}
+
+/**
+ * Execute a Collabora action received from the AI
+ * These actions modify the document via PostMessage to Collabora
+ *
+ * @param {Object} action - Action object with type and parameters
+ */
+async function executeCollaboraAction(action) {
+  console.log('[Nora] Executing Collabora action:', action)
+
+  switch (action.type) {
+    case 'insert_text':
+      if (action.text) {
+        insertText(action.text)
+      }
+      break
+
+    case 'replace_selection':
+      if (action.text) {
+        replaceSelection(action.text)
+      }
+      break
+
+    case 'format':
+      if (action.command) {
+        executeUnoCommand(action.command)
+      }
+      break
+
+    case 'execute_uno':
+      // Legacy support for old action format
+      if (action.command) {
+        executeUnoCommand(action.command)
+      }
+      break
+
+    default:
+      console.warn('[Nora] Unknown action type:', action.type)
+  }
+
+  // Small delay between actions for Collabora to process
+  await new Promise(resolve => setTimeout(resolve, 100))
+}
+
+/**
+ * Handle AI actions returned from the API (legacy support)
+ * @deprecated Use executeCollaboraAction instead
+ */
+function handleAiAction(action) {
+  executeCollaboraAction(action)
+}
+
 // Lifecycle
 onMounted(() => {
   window.addEventListener('message', handlePostMessage)
@@ -230,10 +568,21 @@ onUnmounted(() => {
   window.removeEventListener('message', handlePostMessage)
 })
 
-// Expose methods to parent
+// Expose methods to parent component and external scripts
 defineExpose({
   reload: loadEditor,
-  save
+  save,
+  // Nora AI document interaction methods
+  insertText,
+  getSelection,
+  replaceSelection,
+  executeUnoCommand,
+  exportDocument,
+  executeCollaboraAction,
+  // Direct access to chat functions
+  toggleNoraSidebar,
+  // Access to state for debugging
+  getSelectedText: () => selectedText.value
 })
 </script>
 
@@ -328,21 +677,21 @@ defineExpose({
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: #0369a3;
   color: white;
   border: none;
   border-radius: 50px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 14px rgba(3, 105, 163, 0.4);
   transition: all 0.2s ease;
   z-index: 1000;
 }
 
 .nora-fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 20px rgba(3, 105, 163, 0.5);
 }
 
 .nora-fab:active {
@@ -356,6 +705,221 @@ defineExpose({
 
 .nora-fab-label {
   font-family: inherit;
+}
+
+/* Editor frame when sidebar is open */
+.editor-frame.with-sidebar {
+  width: calc(100% - 380px);
+}
+
+/* Nora Chat Sidebar */
+.nora-sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100%;
+  background: white;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.nora-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #0369a3;
+  color: white;
+}
+
+.nora-sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.nora-sidebar-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.nora-sidebar-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.nora-sidebar-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nora-welcome {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.nora-welcome-icon {
+  margin-bottom: 16px;
+  color: #0369a3;
+}
+
+.nora-welcome h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.nora-welcome p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.nora-message {
+  max-width: 85%;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nora-message.user {
+  align-self: flex-end;
+}
+
+.nora-message.assistant {
+  align-self: flex-start;
+}
+
+.nora-message-content {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.nora-message.user .nora-message-content {
+  background: #0369a3;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.nora-message.assistant .nora-message-content {
+  background: #f3f4f6;
+  color: #374151;
+  border-bottom-left-radius: 4px;
+}
+
+.nora-typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+}
+
+.nora-typing span {
+  width: 8px;
+  height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.nora-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.nora-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+}
+
+.nora-sidebar-input {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.nora-sidebar-input textarea {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.nora-sidebar-input textarea:focus {
+  border-color: #0369a3;
+  box-shadow: 0 0 0 3px rgba(3, 105, 163, 0.1);
+}
+
+.nora-send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0369a3;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nora-send-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(3, 105, 163, 0.4);
+}
+
+.nora-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
 

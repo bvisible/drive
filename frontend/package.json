@@ -72,6 +72,7 @@
   "pnpm": {
     "overrides": {
       "yjs": "13.6.27"
-    }
+    },
+    "ignoredOptionalDependencies": ["canvas"]
   }
 }
