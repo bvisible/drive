@@ -30,7 +30,8 @@ export default defineConfig(async ({ mode }) => {
       dedupe: ["yjs"],
     },
     build: {
-      sourcemap: true,
+      // Disable sourcemaps in production to reduce memory usage during build
+      sourcemap: isDev,
       outDir: `../${path.basename(path.resolve(".."))}/public/frontend`,
       emptyOutDir: true,
       target: "esnext",
