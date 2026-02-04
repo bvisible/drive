@@ -42,6 +42,23 @@
       allow="clipboard-read; clipboard-write"
       @load="onFrameLoad"
     />
+
+    <!-- Nora AI Assistant floating button -->
+    <button
+      v-if="!loading && !error"
+      class="nora-fab"
+      :title="__('Nora - AI Assistant')"
+      @click="emit('nora-click')"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="18" height="12" rx="2"/>
+        <circle cx="8" cy="14" r="2"/>
+        <circle cx="16" cy="14" r="2"/>
+        <path d="M9 4v4"/>
+        <path d="M15 4v4"/>
+      </svg>
+      <span class="nora-fab-label">Nora</span>
+    </button>
   </div>
 </template>
 
@@ -300,6 +317,45 @@ defineExpose({
   height: 100%;
   border: none;
   min-height: 600px;
+}
+
+/* Nora AI Assistant floating action button */
+.nora-fab {
+  position: absolute;
+  bottom: 80px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.nora-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.nora-fab:active {
+  transform: translateY(0);
+}
+
+.nora-fab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nora-fab-label {
+  font-family: inherit;
 }
 </style>
 
