@@ -119,9 +119,20 @@ function onFrameLoad() {
 
 // Handle PostMessage from Collabora
 function handlePostMessage(event) {
-  const data = event.data
+  let data = event.data
+
+  // Parse JSON string if needed (Collabora sends JSON strings)
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data)
+    } catch (e) {
+      return // Not a JSON message, ignore
+    }
+  }
 
   if (typeof data === 'object' && data.MessageId) {
+    console.log('[Collabora PostMessage]', data.MessageId, data.Values)
+
     switch (data.MessageId) {
       case 'UI_Close':
         emit('close')
@@ -134,6 +145,7 @@ function handlePostMessage(event) {
         break
       case 'App_LoadingStatus':
         if (data.Values?.Status === 'Frame_Ready') {
+          console.log('[Collabora] Frame_Ready - sending handshake and inserting Nora button')
           // PostMessage handshake - signal that host is ready
           sendCommand({ MessageId: 'Host_PostmessageReady' })
           // Insert Nora button in toolbar
@@ -145,6 +157,7 @@ function handlePostMessage(event) {
         }
         break
       case 'Clicked_Button':
+        console.log('[Collabora] Button clicked:', data.Values?.Id)
         if (data.Values?.Id === 'nora-chat') {
           emit('nora-click')
         }
@@ -158,7 +171,7 @@ function insertNoraButton() {
   // SVG icon for Nora (AI/bot icon) encoded in base64
   const noraIconBase64 = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM1NTU1NTUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSI4IiB3aWR0aD0iMTgiIGhlaWdodD0iMTIiIHJ4PSIyIi8+PGNpcmNsZSBjeD0iOCIgY3k9IjE0IiByPSIyIi8+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNCIgcj0iMiIvPjxwYXRoIGQ9Ik05IDR2NCIvPjxwYXRoIGQ9Ik0xNSA0djQiLz48L3N2Zz4='
 
-  sendCommand({
+  const command = {
     MessageId: 'Insert_Button',
     Values: {
       id: 'nora-chat',
@@ -167,7 +180,9 @@ function insertNoraButton() {
       mobile: true,
       label: 'Nora'
     }
-  })
+  }
+  console.log('[Collabora] Sending Insert_Button command:', command)
+  sendCommand(command)
 }
 
 // Send command to Collabora
