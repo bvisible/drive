@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "NODE_OPTIONS=--max-old-space-size=4096 vite --host",
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
-    "build:force": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
-    "preview": "NODE_OPTIONS=--max-old-space-size=4096 vite preview",
+    "dev": "NODE_OPTIONS=--max-old-space-size=2048 vite --host",
+    "build": "NODE_OPTIONS=--max-old-space-size=2048 vite build",
+    "build:force": "NODE_OPTIONS=--max-old-space-size=2048 vite build",
+    "preview": "NODE_OPTIONS=--max-old-space-size=2048 vite preview",
     "precommit": "pretty-quick --staged",
     "lint": "eslint --fix"
   },
