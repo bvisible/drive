@@ -56,7 +56,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'save', 'error', 'loaded'])
+const emit = defineEmits(['close', 'save', 'error', 'loaded', 'nora-click'])
 
 // State
 const loading = ref(true)
@@ -133,13 +133,41 @@ function handlePostMessage(event) {
         }
         break
       case 'App_LoadingStatus':
+        if (data.Values?.Status === 'Frame_Ready') {
+          // PostMessage handshake - signal that host is ready
+          sendCommand({ MessageId: 'Host_PostmessageReady' })
+          // Insert Nora button in toolbar
+          insertNoraButton()
+        }
         if (data.Values?.Status === 'Document_Loaded') {
           loading.value = false
           emit('loaded')
         }
         break
+      case 'Clicked_Button':
+        if (data.Values?.Id === 'nora-chat') {
+          emit('nora-click')
+        }
+        break
     }
   }
+}
+
+// Insert Nora AI assistant button in Collabora toolbar
+function insertNoraButton() {
+  // SVG icon for Nora (AI/bot icon) encoded in base64
+  const noraIconBase64 = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM1NTU1NTUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSI4IiB3aWR0aD0iMTgiIGhlaWdodD0iMTIiIHJ4PSIyIi8+PGNpcmNsZSBjeD0iOCIgY3k9IjE0IiByPSIyIi8+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNCIgcj0iMiIvPjxwYXRoIGQ9Ik05IDR2NCIvPjxwYXRoIGQ9Ik0xNSA0djQiLz48L3N2Zz4='
+
+  sendCommand({
+    MessageId: 'Insert_Button',
+    Values: {
+      id: 'nora-chat',
+      imgurl: noraIconBase64,
+      hint: __('Nora - AI Assistant'),
+      mobile: true,
+      label: 'Nora'
+    }
+  })
 }
 
 // Send command to Collabora
