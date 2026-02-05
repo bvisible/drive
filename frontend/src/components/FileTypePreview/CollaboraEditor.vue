@@ -427,14 +427,14 @@ function getSelection() {
       }
     })
 
-    // Timeout after 2 seconds
+    // Timeout after 500ms (selection usually responds instantly or not at all)
     setTimeout(() => {
       if (pendingSelectionCallback.value === resolve) {
         console.log('[Nora] Selection request timeout')
         pendingSelectionCallback.value = null
         resolve('')
       }
-    }, 2000)
+    }, 500)
   })
 }
 
@@ -616,37 +616,7 @@ async function executeCollaboraAction(action) {
       // Reload document using Collabora's Host_VersionRestore PostMessage API
       // This forces Collabora to reload the document from the WOPI server
       // See: https://sdk.collaboraonline.com/docs/postmessage_api.html#host-versionrestore
-      console.log('[Nora] Forcing Collabora to reload via Host_VersionRestore')
-
-      // Promise that resolves when Pre_Restore_Ack is received
-      const waitForAck = new Promise((resolve) => {
-        pendingRestoreCallback.value = resolve
-        // Timeout after 5s if no response
-        setTimeout(() => {
-          if (pendingRestoreCallback.value === resolve) {
-            console.warn('[Nora] Pre_Restore_Ack timeout, forcing restore')
-            pendingRestoreCallback.value = null
-            resolve()
-          }
-        }, 5000)
-      })
-
-      // Step 1: Signal pre-restore - tells Collabora to prepare for reload
-      sendCommand({
-        MessageId: 'Host_VersionRestore',
-        Values: { Status: 'Pre_Restore' }
-      })
-
-      // Step 2: Wait for Pre_Restore_Ack (or timeout)
-      await waitForAck
-
-      // Step 3: Small delay then trigger actual restore from WOPI server
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      sendCommand({
-        MessageId: 'Host_VersionRestore',
-        Values: { Status: 'Restore' }
-      })
+      await reloadDocument()
       break
 
     default:
@@ -665,15 +635,59 @@ function handleAiAction(action) {
   executeCollaboraAction(action)
 }
 
+// Reload document (extracted for reuse)
+async function reloadDocument() {
+  console.log('[Nora] Forcing Collabora to reload via Host_VersionRestore')
+
+  const waitForAck = new Promise((resolve) => {
+    pendingRestoreCallback.value = resolve
+    setTimeout(() => {
+      if (pendingRestoreCallback.value === resolve) {
+        console.warn('[Nora] Pre_Restore_Ack timeout, forcing restore')
+        pendingRestoreCallback.value = null
+        resolve()
+      }
+    }, 5000)
+  })
+
+  sendCommand({
+    MessageId: 'Host_VersionRestore',
+    Values: { Status: 'Pre_Restore' }
+  })
+
+  await waitForAck
+  await new Promise(resolve => setTimeout(resolve, 100))
+
+  sendCommand({
+    MessageId: 'Host_VersionRestore',
+    Values: { Status: 'Restore' }
+  })
+}
+
 // Lifecycle
 onMounted(() => {
   window.addEventListener('message', handlePostMessage)
   loadChatHistory()
   loadEditor()
+
+  // Listen for realtime file updates from NORA (via Frappe publish_realtime)
+  if (window.frappe && window.frappe.realtime) {
+    window.frappe.realtime.on('collabora_file_updated', (data) => {
+      if (data.file_id === props.fileId && data.source === 'nora_edit') {
+        console.log('[Collabora] File updated via realtime, reloading...')
+        reloadDocument()
+      }
+    })
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('message', handlePostMessage)
+
+  // Cleanup realtime listener
+  if (window.frappe && window.frappe.realtime) {
+    window.frappe.realtime.off('collabora_file_updated')
+  }
 })
 
 // Expose methods to parent component and external scripts
