@@ -572,22 +572,25 @@ async function executeCollaboraAction(action) {
       break
 
     case 'reload':
-      // Reload document (used when backend has modified the file)
-      // Force complete reload by closing session and recreating iframe
-      console.log('[Nora] Reloading document via action')
+      // Reload document using Collabora's Host_VersionRestore PostMessage API
+      // This forces Collabora to reload the document from the WOPI server
+      // See: https://sdk.collaboraonline.com/docs/postmessage_api.html#host-versionrestore
+      console.log('[Nora] Forcing Collabora to reload via Host_VersionRestore')
 
-      // Send close command to Collabora to release the document
+      // Step 1: Signal pre-restore - tells Collabora to prepare for reload
       sendCommand({
-        MessageId: 'Close_Session',
-        Values: {}
+        MessageId: 'Host_VersionRestore',
+        Values: { Status: 'Pre_Restore' }
       })
 
-      // Clear editor URL to destroy iframe
-      editorUrl.value = ''
-
-      // Wait for Collabora to release the document, then reload
+      // Step 2: Wait for Collabora to prepare (save any pending changes)
       await new Promise(resolve => setTimeout(resolve, 500))
-      await loadEditor()
+
+      // Step 3: Trigger actual restore from WOPI server
+      sendCommand({
+        MessageId: 'Host_VersionRestore',
+        Values: { Status: 'Restore' }
+      })
       break
 
     default:
