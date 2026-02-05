@@ -104,7 +104,7 @@
           class="nora-message"
           :class="msg.role"
         >
-          <div class="nora-message-content">{{ msg.content }}</div>
+          <div class="nora-message-content" v-html="renderMarkdown(msg.content)"></div>
         </div>
         <div v-if="isTyping" class="nora-message assistant">
           <div class="nora-typing">
@@ -181,6 +181,35 @@ const __ = (text) => {
     return window.__(text)
   }
   return text
+}
+
+// Simple markdown renderer for chat messages
+// Supports: **bold**, *italic*, `code`, and line breaks
+function renderMarkdown(text) {
+  if (!text) return ''
+
+  // Escape HTML first to prevent XSS
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Convert markdown to HTML
+  // Bold: **text** or __text__
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>')
+
+  // Italic: *text* or _text_ (but not inside words)
+  html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+  html = html.replace(/(?<![a-zA-Z])_([^_\n]+)_(?![a-zA-Z])/g, '<em>$1</em>')
+
+  // Inline code: `code`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+
+  // Line breaks: convert \n to <br>
+  html = html.replace(/\n/g, '<br>')
+
+  return html
 }
 
 // API Resource
@@ -542,6 +571,12 @@ async function executeCollaboraAction(action) {
       }
       break
 
+    case 'reload':
+      // Reload document (used when backend has modified the file)
+      console.log('[Nora] Reloading document via action')
+      loadEditor()
+      break
+
     default:
       console.warn('[Nora] Unknown action type:', action.type)
   }
@@ -837,6 +872,27 @@ defineExpose({
   background: #f3f4f6;
   color: #374151;
   border-bottom-left-radius: 4px;
+}
+
+/* Markdown styles in chat messages */
+.nora-message-content strong {
+  font-weight: 600;
+}
+
+.nora-message-content em {
+  font-style: italic;
+}
+
+.nora-message-content code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.9em;
+}
+
+.nora-message.user .nora-message-content code {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .nora-typing {
