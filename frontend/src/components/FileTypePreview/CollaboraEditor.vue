@@ -141,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { createResource } from 'frappe-ui'
 
 const props = defineProps({
@@ -181,6 +181,32 @@ const __ = (text) => {
     return window.__(text)
   }
   return text
+}
+
+// Chat persistence key
+const chatStorageKey = computed(() => `nora_chat_${props.fileId}`)
+
+// Load chat history from localStorage
+function loadChatHistory() {
+  try {
+    const stored = localStorage.getItem(chatStorageKey.value)
+    if (stored) {
+      chatMessages.value = JSON.parse(stored)
+    }
+  } catch (e) {
+    console.warn('[Nora] Failed to load chat history:', e)
+  }
+}
+
+// Save chat history to localStorage
+function saveChatHistory() {
+  try {
+    // Keep only last 50 messages to avoid localStorage limits
+    const toSave = chatMessages.value.slice(-50)
+    localStorage.setItem(chatStorageKey.value, JSON.stringify(toSave))
+  } catch (e) {
+    console.warn('[Nora] Failed to save chat history:', e)
+  }
 }
 
 // Simple markdown renderer for chat messages
@@ -467,6 +493,7 @@ async function sendMessage() {
     role: 'user',
     content: message
   })
+  saveChatHistory()
   userInput.value = ''
   isTyping.value = true
 
@@ -511,6 +538,7 @@ async function sendMessage() {
         role: 'assistant',
         content: result.response || __('No response received.')
       })
+      saveChatHistory()
 
       // Execute Collabora actions if any
       if (result.collabora_actions && result.collabora_actions.length > 0) {
@@ -526,6 +554,7 @@ async function sendMessage() {
       role: 'assistant',
       content: __('Sorry, I encountered an error. Please try again.')
     })
+    saveChatHistory()
   } finally {
     isTyping.value = false
     nextTick(() => {
@@ -612,6 +641,7 @@ function handleAiAction(action) {
 // Lifecycle
 onMounted(() => {
   window.addEventListener('message', handlePostMessage)
+  loadChatHistory()
   loadEditor()
 })
 
@@ -758,12 +788,7 @@ defineExpose({
   font-family: inherit;
 }
 
-/* Editor frame when sidebar is open */
-.editor-frame.with-sidebar {
-  width: calc(100% - 380px);
-}
-
-/* Nora Chat Sidebar */
+/* Nora Chat Sidebar - Overlay mode (does not shift iframe) */
 .nora-sidebar {
   position: absolute;
   top: 0;
@@ -775,7 +800,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   z-index: 1001;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
 }
 
 .nora-sidebar-header {
