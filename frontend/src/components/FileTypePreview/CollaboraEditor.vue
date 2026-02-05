@@ -168,6 +168,7 @@ const userInput = ref('')
 const isTyping = ref(false)
 const selectedText = ref('')
 const pendingSelectionCallback = ref(null)
+const pendingRestoreCallback = ref(null)
 
 // Refs
 const wopiForm = ref(null)
@@ -333,6 +334,17 @@ function handlePostMessage(event) {
           if (pendingSelectionCallback.value) {
             pendingSelectionCallback.value(selectedText.value)
             pendingSelectionCallback.value = null
+          }
+        }
+        break
+
+      // Handle version restore acknowledgment from Collabora
+      case 'App_VersionRestore':
+        console.log('[Collabora] VersionRestore response:', data.Values?.Status)
+        if (data.Values?.Status === 'Pre_Restore_Ack') {
+          if (pendingRestoreCallback.value) {
+            pendingRestoreCallback.value()
+            pendingRestoreCallback.value = null
           }
         }
         break
@@ -606,16 +618,31 @@ async function executeCollaboraAction(action) {
       // See: https://sdk.collaboraonline.com/docs/postmessage_api.html#host-versionrestore
       console.log('[Nora] Forcing Collabora to reload via Host_VersionRestore')
 
+      // Promise that resolves when Pre_Restore_Ack is received
+      const waitForAck = new Promise((resolve) => {
+        pendingRestoreCallback.value = resolve
+        // Timeout after 5s if no response
+        setTimeout(() => {
+          if (pendingRestoreCallback.value === resolve) {
+            console.warn('[Nora] Pre_Restore_Ack timeout, forcing restore')
+            pendingRestoreCallback.value = null
+            resolve()
+          }
+        }, 5000)
+      })
+
       // Step 1: Signal pre-restore - tells Collabora to prepare for reload
       sendCommand({
         MessageId: 'Host_VersionRestore',
         Values: { Status: 'Pre_Restore' }
       })
 
-      // Step 2: Wait for Collabora to prepare (save any pending changes)
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Step 2: Wait for Pre_Restore_Ack (or timeout)
+      await waitForAck
 
-      // Step 3: Trigger actual restore from WOPI server
+      // Step 3: Small delay then trigger actual restore from WOPI server
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       sendCommand({
         MessageId: 'Host_VersionRestore',
         Values: { Status: 'Restore' }
