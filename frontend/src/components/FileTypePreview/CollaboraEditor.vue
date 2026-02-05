@@ -573,8 +573,21 @@ async function executeCollaboraAction(action) {
 
     case 'reload':
       // Reload document (used when backend has modified the file)
+      // Force complete reload by closing session and recreating iframe
       console.log('[Nora] Reloading document via action')
-      loadEditor()
+
+      // Send close command to Collabora to release the document
+      sendCommand({
+        MessageId: 'Close_Session',
+        Values: {}
+      })
+
+      // Clear editor URL to destroy iframe
+      editorUrl.value = ''
+
+      // Wait for Collabora to release the document, then reload
+      await new Promise(resolve => setTimeout(resolve, 500))
+      await loadEditor()
       break
 
     default:
