@@ -141,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { createResource } from 'frappe-ui'
 
 const props = defineProps({
@@ -168,7 +168,6 @@ const userInput = ref('')
 const isTyping = ref(false)
 const selectedText = ref('')
 const pendingSelectionCallback = ref(null)
-const pendingRestoreCallback = ref(null)
 
 // Refs
 const wopiForm = ref(null)
@@ -182,32 +181,6 @@ const __ = (text) => {
     return window.__(text)
   }
   return text
-}
-
-// Chat persistence key
-const chatStorageKey = computed(() => `nora_chat_${props.fileId}`)
-
-// Load chat history from localStorage
-function loadChatHistory() {
-  try {
-    const stored = localStorage.getItem(chatStorageKey.value)
-    if (stored) {
-      chatMessages.value = JSON.parse(stored)
-    }
-  } catch (e) {
-    console.warn('[Nora] Failed to load chat history:', e)
-  }
-}
-
-// Save chat history to localStorage
-function saveChatHistory() {
-  try {
-    // Keep only last 50 messages to avoid localStorage limits
-    const toSave = chatMessages.value.slice(-50)
-    localStorage.setItem(chatStorageKey.value, JSON.stringify(toSave))
-  } catch (e) {
-    console.warn('[Nora] Failed to save chat history:', e)
-  }
 }
 
 // Simple markdown renderer for chat messages
@@ -337,17 +310,6 @@ function handlePostMessage(event) {
           }
         }
         break
-
-      // Handle version restore acknowledgment from Collabora
-      case 'App_VersionRestore':
-        console.log('[Collabora] VersionRestore response:', data.Values?.Status)
-        if (data.Values?.Status === 'Pre_Restore_Ack') {
-          if (pendingRestoreCallback.value) {
-            pendingRestoreCallback.value()
-            pendingRestoreCallback.value = null
-          }
-        }
-        break
     }
   }
 }
@@ -427,14 +389,14 @@ function getSelection() {
       }
     })
 
-    // Timeout after 500ms (selection usually responds instantly or not at all)
+    // Timeout after 2 seconds
     setTimeout(() => {
       if (pendingSelectionCallback.value === resolve) {
         console.log('[Nora] Selection request timeout')
         pendingSelectionCallback.value = null
         resolve('')
       }
-    }, 500)
+    }, 2000)
   })
 }
 
@@ -505,7 +467,7 @@ async function sendMessage() {
     role: 'user',
     content: message
   })
-  saveChatHistory()
+
   userInput.value = ''
   isTyping.value = true
 
@@ -550,7 +512,7 @@ async function sendMessage() {
         role: 'assistant',
         content: result.response || __('No response received.')
       })
-      saveChatHistory()
+    
 
       // Execute Collabora actions if any
       if (result.collabora_actions && result.collabora_actions.length > 0) {
@@ -566,7 +528,7 @@ async function sendMessage() {
       role: 'assistant',
       content: __('Sorry, I encountered an error. Please try again.')
     })
-    saveChatHistory()
+  
   } finally {
     isTyping.value = false
     nextTick(() => {
@@ -613,10 +575,9 @@ async function executeCollaboraAction(action) {
       break
 
     case 'reload':
-      // Reload document using Collabora's Host_VersionRestore PostMessage API
-      // This forces Collabora to reload the document from the WOPI server
-      // See: https://sdk.collaboraonline.com/docs/postmessage_api.html#host-versionrestore
-      await reloadDocument()
+      // Reload document (used when backend has modified the file)
+      console.log('[Nora] Reloading document via action')
+      loadEditor()
       break
 
     default:
@@ -635,58 +596,35 @@ function handleAiAction(action) {
   executeCollaboraAction(action)
 }
 
-// Reload document (extracted for reuse)
-async function reloadDocument() {
-  console.log('[Nora] Forcing Collabora to reload via Host_VersionRestore')
-
-  const waitForAck = new Promise((resolve) => {
-    pendingRestoreCallback.value = resolve
+// Handle external file updates (from NORA/AI backend edits)
+function handleExternalFileUpdate(data) {
+  if (data.file_id === props.fileId) {
+    console.log('[Collabora] External update detected from', data.source, '- reloading document')
+    // Small delay to ensure backend has fully committed
     setTimeout(() => {
-      if (pendingRestoreCallback.value === resolve) {
-        console.warn('[Nora] Pre_Restore_Ack timeout, forcing restore')
-        pendingRestoreCallback.value = null
-        resolve()
-      }
-    }, 5000)
-  })
-
-  sendCommand({
-    MessageId: 'Host_VersionRestore',
-    Values: { Status: 'Pre_Restore' }
-  })
-
-  await waitForAck
-  await new Promise(resolve => setTimeout(resolve, 100))
-
-  sendCommand({
-    MessageId: 'Host_VersionRestore',
-    Values: { Status: 'Restore' }
-  })
+      loadEditor()
+    }, 500)
+  }
 }
 
 // Lifecycle
 onMounted(() => {
   window.addEventListener('message', handlePostMessage)
-  loadChatHistory()
-  loadEditor()
 
-  // Listen for realtime file updates from NORA (via Frappe publish_realtime)
-  if (window.frappe && window.frappe.realtime) {
-    window.frappe.realtime.on('collabora_file_updated', (data) => {
-      if (data.file_id === props.fileId && data.source === 'nora_edit') {
-        console.log('[Collabora] File updated via realtime, reloading...')
-        reloadDocument()
-      }
-    })
+  // Listen for external file updates via Frappe realtime (WebSocket)
+  if (window.frappe?.realtime) {
+    frappe.realtime.on('collabora_file_updated', handleExternalFileUpdate)
   }
+
+  loadEditor()
 })
 
 onUnmounted(() => {
   window.removeEventListener('message', handlePostMessage)
 
   // Cleanup realtime listener
-  if (window.frappe && window.frappe.realtime) {
-    window.frappe.realtime.off('collabora_file_updated')
+  if (window.frappe?.realtime) {
+    frappe.realtime.off('collabora_file_updated', handleExternalFileUpdate)
   }
 })
 
@@ -829,7 +767,12 @@ defineExpose({
   font-family: inherit;
 }
 
-/* Nora Chat Sidebar - Overlay mode (does not shift iframe) */
+/* Editor frame when sidebar is open */
+.editor-frame.with-sidebar {
+  width: calc(100% - 380px);
+}
+
+/* Nora Chat Sidebar */
 .nora-sidebar {
   position: absolute;
   top: 0;
@@ -841,7 +784,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   z-index: 1001;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
 }
 
 .nora-sidebar-header {
