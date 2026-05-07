@@ -109,19 +109,46 @@ const checkingCollabora = ref(true)
 const jwt_token = ref(null)
 const error = ref(null)
 
-// Check if Collabora is available
+// Check if Collabora is available, with retry to handle the lazy-start path.
+// Backstory: drive_wopi.wopi.lifecycle.ensure_running() boots coolwsd on
+// demand the first time someone opens an Office file (saves ~150 MB RSS +
+// up to 1 GB of swap on small instances by keeping it stopped otherwise).
+// Cold-start can take 5-15 s; the very first check_collabora_status() call
+// may return available=false if the daemon answered the TCP probe but not
+// yet /hosting/discovery. Without a retry, the user sees the "Collaborative
+// editing not available" modal even though a second click would succeed.
+const COLLABORA_CHECK_MAX_RETRIES = 3
+const COLLABORA_CHECK_RETRY_DELAY_MS = 3000
+let collaboraCheckAttempts = 0
+
 const collaboraStatus = createResource({
   url: "drive_wopi.wopi.discovery.check_collabora_status",
   onSuccess(data) {
-    collaboraAvailable.value = data.available === true
-    checkingCollabora.value = false
-
-    // Auto-open Collabora if available
     if (data.available === true) {
+      collaboraAvailable.value = true
+      checkingCollabora.value = false
       showCollaboraEditor.value = true
+      return
     }
+
+    collaboraCheckAttempts += 1
+    if (collaboraCheckAttempts < COLLABORA_CHECK_MAX_RETRIES) {
+      // Daemon probably warming up — retry shortly. Keep checkingCollabora
+      // true so the user sees the loading state instead of the fallback modal.
+      setTimeout(() => collaboraStatus.fetch(), COLLABORA_CHECK_RETRY_DELAY_MS)
+      return
+    }
+
+    // Real failure: surface the fallback (View Microsoft / Download).
+    collaboraAvailable.value = false
+    checkingCollabora.value = false
   },
   onError() {
+    collaboraCheckAttempts += 1
+    if (collaboraCheckAttempts < COLLABORA_CHECK_MAX_RETRIES) {
+      setTimeout(() => collaboraStatus.fetch(), COLLABORA_CHECK_RETRY_DELAY_MS)
+      return
+    }
     collaboraAvailable.value = false
     checkingCollabora.value = false
   },

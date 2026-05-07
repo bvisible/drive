@@ -6,8 +6,13 @@ tags
 **/node_modules
 **/dist/
 **/__pycache__
-drive/public/frontend
-drive/www/drive.html
+# 2026-05-07 (NORA #28) — build outputs are now committed on version-15
+# so instances can pull a working frontend without rebuilding on prod
+# (vite needs ~3 GB heap and OOM-killed on 4 GB Neoffice tenants).
+# Re-ignore both paths if you reintroduce a CI-only build flow on a
+# branch that should NOT carry artifacts.
+# drive/public/frontend
+# drive/www/drive.html
 experiments/*
 *log.json
 .env
