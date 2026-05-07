@@ -17,4 +17,4 @@ experiments/*
 *log.json
 .env
 build/
-CLAUDE.md
+# CLAUDE.md  # 2026-05-07 unshipped to document commit-the-build pipeline

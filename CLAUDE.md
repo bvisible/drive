@@ -1,68 +1,45 @@
-# Frappe Drive - Local Modifications
+# Git Configuration
 
-This document tracks custom modifications made to the Frappe Drive application.
+## Branch de production
+- **Branche:** `version-15`
+- **Remote:** `origin` (bvisible)
 
-## Collabora Online Integration (drive_wopi)
+## Upstream (lecture seule)
+- **Repo:** https://github.com/frappe/drive.git
+- **Remote:** `upstream`
+- **Branche upstream:** `develop`
+- **Usage:** Pull uniquement pour sync les mises à jour officielles
 
-**Date:** December 2025
-**Related App:** [drive_wopi](https://github.com/bvisible/drive_wopi)
+## Règles
+1. TOUJOURS push sur `origin`, JAMAIS sur `upstream`
+2. Pour sync: `git fetch upstream && git merge upstream/develop`
+3. Branch de travail: `version-15`
 
-### Modified Files
+## Build pipeline (commit-the-build)
 
-#### 1. `frontend/src/components/FileTypePreview/MSOfficePreview.vue`
+⚠️ **Ne jamais lancer `yarn build` ou `bench build --app drive` localement sur un serveur Neoffice** (4 GB RAM → OOM-kill garanti). Le build se fait UNIQUEMENT sur GitHub Actions (ubuntu-latest, 16 GB RAM).
 
-**Purpose:** Modified to add Collabora Online editing option alongside the existing Microsoft Office viewer.
+### Comment ça marche
 
-**Changes:**
-- Added import for `CollaboraEditor` component
-- Added choice dialog with 3 options: Edit (Collabora), View (Microsoft), Download
-- Added `collaboraAvailable` check via `drive_wopi.wopi.discovery.check_collabora_status`
-- Added `showCollaboraEditor` and `showMSViewer` state management
+1. Modif d'un fichier source (`frontend/...`) en local → `git commit` → `git push origin version-15`. **Ne pas builder localement.**
+2. Le workflow `.github/workflows/build-frontend.yml` détecte le push, lance `yarn build` sur ubuntu-latest (~1-2 min) et commit les artefacts back avec un commit `[skip-build] frontend artifacts for <SHA>` (par `github-actions[bot]`).
+3. Sur les instances clients, le pipeline d'update fait `git pull` (ramène ton commit + le commit du bot). Quand `bench build --app drive` tourne, il appelle `yarn build` à la racine — **le `package.json` voit les artefacts déjà présents et skip vite** (gate). Plus d'OOM-kill.
 
-**Original behavior:** Showed a warning dialog then loaded MS Office Online viewer
-**New behavior:** Shows a choice dialog with Edit/View/Download options
+### Paths spécifiques
 
-#### 2. `frontend/src/components/FileTypePreview/CollaboraEditor.vue` (NEW)
+- **Source frontend** : `frontend/`
+- **Artefacts vite (commités)** : `drive/public/frontend/`
+- **SPA HTML(s) (commités)** : `drive/www/drive.html`
+- **Build script root** : `pnpm (frontend uses pnpm)`
 
-**Purpose:** New component to embed Collabora Online editor in an iframe.
-
-**Features:**
-- Hidden form to POST access_token to Collabora (required by WOPI protocol)
-- Iframe to display Collabora editor
-- PostMessage handling for save/close events from Collabora
-- Loading state while fetching editor configuration
-
-**API Dependencies:**
-- `drive_wopi.wopi.discovery.get_editor_config` - Returns editor URL and access token
-
-### Configuration Required
-
-Add to `site_config.json`:
-
-```json
-{
-    "collabora_server_url": "https://collabora.yourdomain.com",
-    "collabora_jwt_secret": "your-secret-key-minimum-32-characters",
-    "collabora_jwt_expiry_hours": 10
-}
-```
-
-### Rebuild After Changes
-
-After modifying these files, rebuild the frontend:
+### Forcer un rebuild local (si vraiment nécessaire)
 
 ```bash
-bench build --app drive
+FORCE_REBUILD=1 yarn build
 ```
 
-### Reverting Changes
+### Documentation complète
 
-To revert to original Drive behavior:
-
-1. Remove `CollaboraEditor.vue`
-2. Restore original `MSOfficePreview.vue` from git:
-   ```bash
-   cd apps/drive
-   git checkout frontend/src/components/FileTypePreview/MSOfficePreview.vue
-   ```
-3. Rebuild: `bench build --app drive`
+- Doc canonique : `bvisible/neoffice-devops:main` → `docs/COMMIT-BUILD-PATTERN.md`
+- Doc batch migration (12 apps) : même fichier, sections "Apps that have adopted the pattern" + "Edge cases discovered"
+- Vault Obsidian : `[[NORA/04-savoir-faire/drive-frontend-build-pattern]]`
