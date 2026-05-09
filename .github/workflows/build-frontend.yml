@@ -2,7 +2,7 @@ name: Build Frontend Assets
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, version-15]
     paths:
       - 'frontend/**'
   workflow_dispatch:
@@ -44,24 +44,19 @@ jobs:
         working-directory: frontend
         run: pnpm build
 
-      - name: Create assets archive
+      - name: Copy SPA HTML entries
         run: |
-          tar -czvf frontend-assets.tar.gz -C drive/public frontend/
+          cp drive/public/frontend/index.html drive/www/drive.html || true
 
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
-        with:
-          tag_name: assets-${{ github.sha }}
-          name: Frontend Assets ${{ github.sha }}
-          files: frontend-assets.tar.gz
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload as artifact (for branches)
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-assets
-          path: frontend-assets.tar.gz
-          retention-days: 7
+      - name: Commit built artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add drive/public/frontend/ drive/www/drive.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            SOURCE_SHA=$(git rev-parse --short HEAD)
+            git commit -m "[skip-build] frontend artifacts for ${SOURCE_SHA}"
+            git push
+          fi

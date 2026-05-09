@@ -98,7 +98,7 @@
         :button="{
           variant: 'solid',
           id: 'create-button',
-          label: 'Create',
+          label: __('Create'),
           iconLeft: h(LucidePlus, { class: 'size-4' }),
         }"
         :options="newEntityOptions"
@@ -107,7 +107,7 @@
       <Button
         v-else-if="$route.name === 'Documents' || $route.name === 'Slides'"
         id="create-button"
-        label="Create"
+        :label="__('Create')"
         variant="solid"
         :icon-left="h(LucidePlus, { class: 'size-4' })"
         @click="
@@ -326,56 +326,56 @@ const button = computed(() =>
 
 const newEntityOptions = [
   {
-    group: "Create",
+    group: __("Create"),
     items: dynamicList([
       {
-        label: "Document",
+        label: __("Document"),
         icon: LucideFilePlus2,
         onClick: () => newExternal("Document"),
       },
       {
-        label: "Word",
+        label: __("Word"),
         icon: LucideFileText,
         onClick: () => (dialog.value = "word"),
       },
       {
-        label: "Excel",
+        label: __("Excel"),
         icon: LucideFileSpreadsheet,
         onClick: () => (dialog.value = "excel"),
       },
       {
-        label: "PowerPoint",
+        label: __("PowerPoint"),
         icon: LucidePresentation,
         onClick: () => (dialog.value = "powerpoint"),
       },
       {
-        label: "Presentation",
+        label: __("Presentation"),
         icon: LucideGalleryVerticalEnd,
         onClick: () => (dialog.value = "p"),
         cond: isPrivate.value && apps.data?.find?.((k) => k.name === "slides"),
       },
       {
-        label: "Folder",
+        label: __("Folder"),
         icon: LucideFolderPlus,
         onClick: () => (dialog.value = "f"),
       },
       {
-        label: "Link",
+        label: __("Link"),
         icon: LucideLink,
         onClick: () => (dialog.value = "l"),
       },
     ]),
   },
   {
-    group: "Upload",
+    group: __("Upload"),
     items: [
       {
-        label: "Upload File",
+        label: __("Upload File"),
         icon: LucideFileUp,
         onClick: () => emitter.emit("uploadFile"),
       },
       {
-        label: "Upload Folder",
+        label: __("Upload Folder"),
         icon: LucideFolderUp,
         onClick: () => emitter.emit("uploadFolder"),
       },

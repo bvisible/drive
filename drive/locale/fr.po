@@ -1270,3 +1270,51 @@ msgstr "Modèles"
 #: frontend/src/components/Settings/TemplateSettings.vue:70
 msgid "Update"
 msgstr "Mettre à jour"
+
+msgid "Recents"
+msgstr "Récents"
+
+msgid "Trash"
+msgstr "Corbeille"
+
+msgid "Favourites"
+msgstr "Favoris"
+
+msgid "Documents"
+msgstr "Documents"
+
+msgid "Slides"
+msgstr "Diapositives"
+
+msgid "Views"
+msgstr "Vues"
+
+msgid "Toggle theme"
+msgstr "Changer de thème"
+
+msgid "Create"
+msgstr "Créer"
+
+msgid "Word"
+msgstr "Word"
+
+msgid "Excel"
+msgstr "Excel"
+
+msgid "PowerPoint"
+msgstr "PowerPoint"
+
+msgid "Presentation"
+msgstr "Présentation"
+
+msgid "Folder"
+msgstr "Dossier"
+
+msgid "Link"
+msgstr "Lien"
+
+msgid "Upload File"
+msgstr "Téléverser un fichier"
+
+msgid "Upload Folder"
+msgstr "Téléverser un dossier"
