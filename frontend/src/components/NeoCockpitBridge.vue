@@ -69,6 +69,9 @@ async function loadBoot() {
 
 function render() {
   if (!host.value || !window.NeoCockpit?.mount) return
+  // frame the whole app row: warm page bg + 8px gutter, siblings become
+  // the floating rounded panel (cockpit.css .nc-frame-host, desktop only)
+  host.value.parentElement?.classList.add("nc-frame-host")
   window.NeoCockpit.mount(host.value, {
     env: "spa",
     layout: "sidebar",
@@ -117,6 +120,7 @@ watch(
 
 onUnmounted(() => {
   if (host.value && window.NeoCockpit?.unmount) {
+    host.value.parentElement?.classList.remove("nc-frame-host")
     window.NeoCockpit.unmount(host.value)
   }
 })
