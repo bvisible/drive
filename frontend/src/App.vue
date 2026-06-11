@@ -4,7 +4,7 @@
       v-if="isLoggedIn || $route.meta.allowGuest"
       class="flex flex-col sm:flex-row h-full"
     >
-      <Sidebar v-if="normalView" />
+      <NeoCockpitSidebar v-if="normalView" />
       <div
         id="dropzone"
         class="flex flex-col flex-1 overflow-hidden bg-surface-white relative"
@@ -44,7 +44,7 @@
   </FrappeUIProvider>
 </template>
 <script setup>
-import Sidebar from "@/components/Sidebar.vue"
+import NeoCockpitSidebar from "@/components/NeoCockpitSidebar.vue"
 import SearchPopup from "./components/SearchPopup.vue"
 import FDialogs from "./components/FDialogs.vue"
 import BottomBar from "./components/BottomBar.vue"
