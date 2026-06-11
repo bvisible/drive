@@ -38,6 +38,12 @@ const host = ref(null)
 const BUNDLE = "/assets/frappe/js/lib/neocockpit.global.js"
 let mounted = false
 
+function bundleUrl() {
+  // cache-bust with the server build version (the asset has no hash of its own)
+  const v = window.frappe?.boot?.assets_version || "1"
+  return `${BUNDLE}?v=${encodeURIComponent(v)}`
+}
+
 function loadBundle() {
   return new Promise((resolve, reject) => {
     if (window.NeoCockpit && window.NeoCockpit.mount) return resolve()
@@ -48,7 +54,7 @@ function loadBundle() {
       return
     }
     const s = document.createElement("script")
-    s.src = BUNDLE
+    s.src = bundleUrl()
     s.onload = () => resolve()
     s.onerror = () => reject(new Error("neocockpit bundle failed to load"))
     document.head.appendChild(s)
