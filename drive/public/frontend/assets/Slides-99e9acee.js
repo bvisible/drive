@@ -1,2 +1,0 @@
-import{_ as t}from"./GenericPage-e49ffcaf.js";import{c as a,k as e,o as i,a6 as r,a7 as s}from"./index-3ee80d7e.js";import"./ListView-a3a6d47e.js";import"./ErrorPage-e2268768.js";import"./folder-open-dot-40914b92.js";const f={__name:"Slides",setup(o){return(n,c)=>(i(),a(t,{"get-entities":e(r),empty:{icon:e(s),title:"No presentations yet."}},null,8,["get-entities","empty"]))}};export{f as default};
-//# sourceMappingURL=Slides-99e9acee.js.map

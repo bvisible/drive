@@ -1,2 +1,0 @@
-import{_ as t}from"./GenericPage-e49ffcaf.js";import{z as o,C as r,c as s,k as e,o as a,D as i,L as n}from"./index-3ee80d7e.js";import"./ListView-a3a6d47e.js";import"./ErrorPage-e2268768.js";import"./folder-open-dot-40914b92.js";const y={__name:"Personal",setup(m){return o().commit("setCurrentFolder",{name:"",team:""}),r.fetch(null),(l,p)=>(a(),s(t,{"get-entities":e(i),empty:{icon:e(n),title:"No files yet",description:"Upload to get started!"},verify:{data:{write:1}}},null,8,["get-entities","empty"]))}};export{y as default};
-//# sourceMappingURL=Personal-c4c84acd.js.map
