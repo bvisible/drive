@@ -40,7 +40,7 @@ let mounted = false
 
 function bundleUrl() {
   // cache-bust with the server build version (the asset has no hash of its own)
-  const v = window.frappe?.boot?.assets_version || "1"
+  const v = window.frappe?.boot?.cockpit_bundle_version || window.frappe?.boot?.assets_version || "1"
   return `${BUNDLE}?v=${encodeURIComponent(v)}`
 }
 
