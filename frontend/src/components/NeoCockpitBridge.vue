@@ -32,6 +32,10 @@ const props = defineProps({
   /** SPA-internal navigation (vue-router push). /app/* falls back to a
    *  full page load automatically. */
   navigate: { type: Function, required: true },
+  /** Open the app's own search overlay from the cockpit search bar. */
+  onSearch: { type: Function, default: null },
+  /** Keyboard hint shown in the search bar (the app's native shortcut). */
+  searchKbd: { type: String, default: "" },
 })
 
 const host = ref(null)
@@ -84,6 +88,8 @@ function render() {
     surfaceApp: props.surfaceApp,
     contextNav: props.contextNav,
     contextFooter: props.contextFooter,
+    onSearch: props.onSearch || undefined,
+    searchKbd: props.searchKbd || undefined,
     onNavigate: (route) => {
       if (!route) return
       if (route.startsWith("/app") || route.startsWith("http")) {

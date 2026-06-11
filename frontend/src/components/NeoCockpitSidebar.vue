@@ -6,6 +6,8 @@
     :context-nav="contextNav"
     :context-footer="contextFooter"
     :navigate="(r) => router.push(r)"
+    :on-search="openSearch"
+    search-kbd="⌘K"
     @failed="failed = true"
   />
   <SettingsDialog
@@ -63,6 +65,10 @@ emitter.on("toggleShortcuts", () => {
   showShortcuts.value = !showShortcuts.value
 })
 
+function openSearch() {
+  emitter.emit("showSearchPopup", true)
+}
+
 const surfaceApp = {
   name: "drive",
   title: "Drive",
@@ -74,11 +80,6 @@ const contextNav = computed(() => {
   const sections = [
     {
       items: [
-        {
-          label: __("Search"),
-          icon: "lucide-search",
-          onClick: () => emitter.emit("showSearchPopup", true),
-        },
         {
           label: __("Inbox"),
           icon: "lucide-inbox",
