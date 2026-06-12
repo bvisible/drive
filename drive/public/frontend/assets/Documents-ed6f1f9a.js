@@ -1,0 +1,2 @@
+import{_ as o}from"./GenericPage-f74ffadd.js";import{c as i,k as e,o as n,a4 as c,a5 as t}from"./index-efdd33a7.js";import"./ListView-7a606561.js";import"./ErrorPage-22fddccd.js";import"./folder-open-dot-868a6b7d.js";const f={__name:"Documents",setup(r){return(s,a)=>(n(),i(o,{"get-entities":e(c),icon:e(t),empty:{icon:e(t),title:"Nothing here",description:"You haven't created documents yet."}},null,8,["get-entities","icon","empty"]))}};export{f as default};
+//# sourceMappingURL=Documents-ed6f1f9a.js.map
