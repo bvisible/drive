@@ -88,6 +88,8 @@ declare module 'vue' {
     MoveDialog: typeof import('./src/components/MoveDialog.vue')['default']
     MSOfficePreview: typeof import('./src/components/FileTypePreview/MSOfficePreview.vue')['default']
     Navbar: typeof import('./src/components/Navbar.vue')['default']
+    NeoCockpitBridge: typeof import('./src/components/NeoCockpitBridge.vue')['default']
+    NeoCockpitSidebar: typeof import('./src/components/NeoCockpitSidebar.vue')['default']
     NewFolderDialog: typeof import('./src/components/NewFolderDialog.vue')['default']
     NewLinkDialog: typeof import('./src/components/NewLinkDialog.vue')['default']
     NewOfficeFileDialog: typeof import('./src/components/NewOfficeFileDialog.vue')['default']
