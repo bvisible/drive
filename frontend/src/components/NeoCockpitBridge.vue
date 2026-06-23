@@ -1,7 +1,7 @@
 <template>
   <div
     ref="host"
-    class="neocockpit-host hidden sm:block h-full flex-shrink-0"
+    class="neocockpit-host w-full md:w-auto md:h-full md:flex-shrink-0"
   />
 </template>
 

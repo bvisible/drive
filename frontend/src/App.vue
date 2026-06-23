@@ -2,7 +2,7 @@
   <FrappeUIProvider>
     <div
       v-if="isLoggedIn || $route.meta.allowGuest"
-      class="flex flex-col sm:flex-row h-full"
+      class="flex flex-col md:flex-row h-full"
     >
       <NeoCockpitSidebar v-if="normalView" />
       <div
@@ -18,7 +18,7 @@
       </div>
       <BottomBar
         v-if="!inIframe && isLoggedIn"
-        class="w-full sm:hidden"
+        class="w-full md:hidden"
       />
     </div>
     <router-view
