@@ -55,14 +55,14 @@ def get_user_access(entity, user: str = None, team: bool = False):
     if isinstance(entity, str):
         entity = frappe.get_cached_doc("Drive File", entity)
     access = NO_ACCESS.copy()
-    # Return team perms immediately
     if not user:
         if team:
+            # Return team perms immediately
             return get_team_access(entity)
         else:
             user = frappe.session.user
-    if not team and user not in [frappe.session.user, "Guest"] and not is_admin(entity.team):
-        frappe.throw("You cannot check permissions of other users", PermissionError)
+    # if not team and user not in [frappe.session.user, "Guest"] and not is_admin(entity.team):
+    #     frappe.throw("You cannot check permissions of other users", PermissionError)
 
     # Owners and team members of a file have access
     teams = get_teams(user)
@@ -75,7 +75,7 @@ def get_user_access(entity, user: str = None, team: bool = False):
             "read": 1,
             "comment": 1,
             "share": 1,
-            "upload": int(entity.is_group),
+            "upload": int(entity.is_group) and access_level,
             "write": int(access_level == 2 or entity.owner == user),
             "type": {2: "admin", 1: "user", 0: "guest"}[access_level],
         }
@@ -238,7 +238,8 @@ def get_shared_with_list(entity):
 
     for p in permissions:
         user_info = frappe.db.get_value("User", p.user, ["user_image", "full_name", "email"], as_dict=True)
-        p.update(user_info)
+        if user_info:
+            p.update(user_info)
     return permissions
 
 

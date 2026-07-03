@@ -57,13 +57,7 @@
         height="16"
         class="my-auto stroke-amber-500 fill-amber-500"
       />
-      <template v-if="!isLoggedIn">
-        <Button
-          v-if="rootEntity && rootEntity.allow_download"
-          label="Download"
-          variant="outline"
-          @click="entitiesDownload($route.params.team, [rootEntity])"
-        />
+      <template v-if="!isLoggedIn && !inIframe">
         <Button
           variant="outline"
           @click="$router.push({ name: 'Login' })"
@@ -71,7 +65,7 @@
           Sign In
         </Button>
         <Button
-          v-if="!isLoggedIn"
+          class="hidden md:block"
           variant="solid"
           label="Try out Drive"
           @click="
@@ -88,12 +82,11 @@
           icon: LucideMoreHorizontal,
         }"
       />
-
       <Dropdown
         v-if="
           ['Folder', 'Home', 'Team'].includes($route.name) &&
           isLoggedIn &&
-          props.rootResource?.data?.write !== false
+          props.rootResource?.data?.upload
         "
         :button="{
           variant: 'solid',
@@ -324,7 +317,7 @@ const button = computed(() =>
   possibleButtons.find((k) => k.route == route.name)
 )
 
-const newEntityOptions = [
+const newEntityOptions = computed(() => [
   {
     group: __("Create"),
     items: dynamicList([
@@ -381,5 +374,7 @@ const newEntityOptions = [
       },
     ],
   },
-]
+])
+
+const inIframe = inject("inIframe")
 </script>

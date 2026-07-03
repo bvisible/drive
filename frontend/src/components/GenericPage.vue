@@ -132,9 +132,14 @@ const team = ref(
 watch(
   () => route.params.team,
   (v) => {
-    if (v) team.value = v
-    allUsers.fetch({ team: v })
-  }
+    team.value = v || ""
+  },
+  { immediate: true }
+)
+watch(
+  [team, () => props.getEntities.data?.[0]?.team],
+  ([v, v2]) => (v || v2) && allUsers.fetch({ team: v || v2 }),
+  { immediate: true }
 )
 const activeEntity = computed(() => store.state.activeEntity)
 
@@ -236,6 +241,12 @@ watch(
   { immediate: true, deep: false }
 )
 emitter.on("refresh", refreshData)
+emitter.on("remove-file", (item) => {
+  console.log("alo")
+  selections.value.clear()
+  selections.value.add(item)
+  dialog.value = "remove"
+})
 
 if (team.value && !allUsers.fetched && store.getters.isLoggedIn) {
   allUsers.fetch({ team: team.value })
@@ -243,6 +254,13 @@ if (team.value && !allUsers.fetched && store.getters.isLoggedIn) {
 if (!settings.fetched && store.getters.isLoggedIn) settings.fetch()
 
 // Drag and drop
+const removeFile = (file, target) => {
+  const removedIndex = props.getEntities.data.findIndex((k) => k.name === file)
+  props.getEntities.data.splice(removedIndex, 1)
+  const targetRow = props.getEntities.data.find((k) => k.name === target)
+  if (targetRow) targetRow.children += 1
+  props.getEntities.setData(props.getEntities.data)
+}
 const onDrop = (targetFile, draggedItem) => {
   if (!targetFile.is_group || draggedItem === targetFile.name || !draggedItem)
     return
@@ -250,13 +268,9 @@ const onDrop = (targetFile, draggedItem) => {
     entity_names: [draggedItem],
     new_parent: targetFile.name,
   })
-  const removedIndex = props.getEntities.data.findIndex(
-    (k) => k.name === draggedItem
-  )
-  props.getEntities.data.splice(removedIndex, 1)
-  props.getEntities.data.find((k) => k.name === targetFile.name).children += 1
-  props.getEntities.setData(data)
+  removeFile(draggedItem, targetFile.name)
 }
+emitter.on("remove-file-ui", removeFile)
 
 // Action Items
 const actionItems = computed(() => {
@@ -425,13 +439,15 @@ if (settings.data?.auto_detect_links) {
 
 const socket = inject("socket")
 socket.on("list-add", ({ file }) => {
-  if (
-    file.parent_entity === props.getEntities.params.entity_name &&
-    !props.getEntities.data.find((k) => k.name === file.name)
-  ) {
-    props.getEntities.data.push(...prettyData([file]))
-    props.getEntities.setData(props.getEntities.data)
-  }
+  refreshData()
+
+  // if (
+  //   file.parent_entity === props.getEntities.params.entity_name &&
+  //   !props.getEntities.data.find((k) => k.name === file.name)
+  // ) {
+  //   props.getEntities.data.push(...prettyData([file]))
+  //   props.getEntities.setData(props.getEntities.data)
+  // }
 })
 socket.on("list-update", ({ file }) => {
   if (file.parent_entity !== props.getEntities.params.entity_name) return

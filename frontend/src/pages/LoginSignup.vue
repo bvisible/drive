@@ -15,8 +15,8 @@
                   isLogin
                     ? "Login to Drive"
                     : params.get("t")
-                      ? "Join " + params.get("t")
-                      : "Create a new account"
+                    ? "Join " + params.get("t")
+                    : "Create an account"
                 }}
               </p>
               <p
@@ -26,7 +26,7 @@
                   !isLogin
                     ? params.get("t")
                       ? "Powered by Frappe Drive."
-                      : "Get 5 GB for free, no credit card required."
+                      : "Welcome to Drive."
                     : "Welcome back!"
                 }}
               </p>
@@ -50,6 +50,7 @@
                     type="text"
                     placeholder="Robin"
                     variant="outline"
+                    autocomplete="off"
                     required
                   />
                   <FormControl
@@ -58,6 +59,7 @@
                     type="text"
                     placeholder="Hood"
                     variant="outline"
+                    autocomplete="off"
                   />
                 </div>
                 <div class="!mt-6 flex gap-2">
@@ -67,13 +69,13 @@
                   />
                   <label class="text-base">
                     I accept the
-                    <Link
+                    <a
                       class="!text-ink-gray-7"
-                      to="https://frappecloud.com/policies"
+                      href="https://frappecloud.com/policies"
                       target="_blank"
                     >
                       Terms and Policies
-                    </Link>
+                    </a>
                   </label>
                 </div>
                 <div class="mt-8 flex flex-col items-center gap-3">
@@ -84,7 +86,7 @@
                     class="w-full font-medium"
                     @click="signup.submit()"
                   >
-                    Create Account
+                    Sign up
                   </Button>
                 </div>
               </template>
@@ -164,13 +166,14 @@
                   v-for="provider in oAuthProviders.data"
                   :key="provider.name"
                   class="mb-2"
-                  :loading="oAuth.loading"
                   :link="provider.auth_url"
                 >
                   <div class="flex items-center">
                     <div v-html="provider.icon" />
-                    <span class="ml-2">{{ isLogin ? "Continue" : "Join" }} with
-                      {{ provider.provider_name }}</span>
+                    <span class="ml-2"
+                      >{{ isLogin ? "Continue" : "Join" }} with
+                      {{ provider.provider_name }}</span
+                    >
                   </div>
                 </Button>
               </template>
@@ -202,7 +205,7 @@
 </template>
 
 <script setup>
-import { createResource, ErrorMessage, FormControl, Link } from "frappe-ui"
+import { createResource, ErrorMessage, FormControl } from "frappe-ui"
 import { ref, onMounted, computed } from "vue"
 import FrappeDriveLogo from "@/components/FrappeDriveLogo.vue"
 import { toast } from "@/utils/toasts"
@@ -253,14 +256,18 @@ const signup = createResource({
       throw new Error("Please accept the terms of service")
     }
   },
-  onSuccess(data) {
-    window.location.href = data.location
+  onSuccess() {
+    console.log("redirecting to", params.get("redirect-to"))
+    window.location.replace(
+      "/drive/setup?redirect-to=" + params.get("redirect-to")
+    )
   },
   onError(err) {
+    console.log(err.messages)
     if (err.exc_type === "DuplicateEntryError") {
-      toast("Account already exists - please login.")
+      toast({ title: "Account already exists - please login.", type: "error" })
     } else {
-      toast("Failed to create account")
+      toast({ title: err.messages[0], type: "error" })
     }
   },
 })
@@ -268,13 +275,6 @@ const signup = createResource({
 const oAuthProviders = createResource({
   url: "drive.api.product.oauth_providers",
   auto: true,
-})
-
-const oAuth = createResource({
-  url: "drive.api.product.google_login",
-  onSuccess(url) {
-    window.location.href = url
-  },
 })
 
 const sendOTP = createResource({
@@ -286,13 +286,7 @@ const sendOTP = createResource({
     toast("Verification code sent to your email")
   },
   onError(err) {
-    if (JSON.stringify(err).includes("not found"))
-      toast(
-        signupDisabled.data
-          ? "You do not have an account on this site."
-          : "Please sign up first!"
-      )
-    else toast("Failed to send verification code")
+    toast({ title: err.messages[0], type: "error" })
   },
 })
 
@@ -301,9 +295,7 @@ const verifyOTP = createResource({
   onSuccess: (data) => {
     otpValidated.value = true
     settings.fetch()
-    if (data.location) {
-      window.location.replace(data.location)
-    }
+    window.location.replace(params.get("redirect-to") || "/drive")
   },
 })
 </script>

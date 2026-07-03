@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: developers@frappe.io\n"
-"POT-Creation-Date: 2025-10-03 16:11+0000\n"
-"PO-Revision-Date: 2025-10-06 23:30\n"
+"POT-Creation-Date: 2025-12-05 16:12+0000\n"
+"PO-Revision-Date: 2025-12-09 17:14\n"
 "Last-Translator: developers@frappe.io\n"
 "Language-Team: Bosnian\n"
 "MIME-Version: 1.0\n"
@@ -64,12 +64,12 @@ msgstr "Zahtjev za Račun"
 msgid "Action Type"
 msgstr "Vrsta akcije"
 
-#: frontend/src/components/Settings/UserListSettings.vue:449
-#: frontend/src/components/TagInput.vue:27
+#: frontend/src/components/Settings/UserListSettings.vue:456
+#: frontend/src/components/TagInput.vue:25
 msgid "Add"
 msgstr "Dodaj"
 
-#: frontend/src/components/Settings/ProfileSettings.vue:77
+#: frontend/src/components/Settings/ProfileSettings.vue:76
 msgid "Add Image"
 msgstr "Dodaj Sliku"
 
@@ -78,6 +78,7 @@ msgid "Added"
 msgstr "Dodato"
 
 #. Name of a role
+#: drive/drive/doctype/drive_desktop_client/drive_desktop_client.json
 #: drive/drive/doctype/drive_document/drive_document.json
 #: drive/drive/doctype/drive_document_version/drive_document_version.json
 #: drive/drive/doctype/drive_entity_activity_log/drive_entity_activity_log.json
@@ -91,21 +92,31 @@ msgstr "Dodato"
 #: drive/drive/doctype/drive_team/drive_team.json
 #: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
 msgid "All"
-msgstr "Sve"
+msgstr "Svi"
 
 #. Label of the allow_download (Check) field in DocType 'Drive File'
 #: drive/drive/doctype/drive_file/drive_file.json
 msgid "Allow Download"
 msgstr "Dozvoli Preuzimanje"
 
-#: frontend/src/components/Sidebar.vue:106
+#: frontend/src/components/Sidebar.vue:125
 msgid "Apps"
 msgstr "Aplikacije"
+
+#. Label of the as_guest (Check) field in DocType 'Drive User Invitation'
+#: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
+msgid "As Guest"
+msgstr "Kao Gost"
 
 #. Label of the auto_detect_links (Check) field in DocType 'Drive Settings'
 #: drive/drive/doctype/drive_settings/drive_settings.json
 msgid "Auto Detect Links"
 msgstr "Automatsko Otkrivanje Veza"
+
+#. Option for the 'Status' (Select) field in DocType 'Drive User Invitation'
+#: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
+msgid "Automatic"
+msgstr "Automatsko"
 
 #: frontend/src/components/DriveToolBar.vue:19
 msgid "By"
@@ -121,7 +132,7 @@ msgstr "Može sadržavati bilo koju meta vrijednost potrebnu za zapisnik pristup
 msgid "Characters"
 msgstr "Znakovi"
 
-#: frontend/src/components/Navbar.vue:311
+#: frontend/src/components/Navbar.vue:301
 msgid "Clear"
 msgstr "Očisti"
 
@@ -160,8 +171,8 @@ msgstr "Potvrdi"
 msgid "Content"
 msgstr "Sadržaj"
 
-#: frontend/src/components/GenericPage.vue:314
-#: frontend/src/components/Navbar.vue:230
+#: frontend/src/components/GenericPage.vue:327
+#: frontend/src/components/Navbar.vue:220
 msgid "Copy Link"
 msgstr "Kopiraj Vezu"
 
@@ -176,8 +187,8 @@ msgstr "Sistem"
 msgid "Defaults to \"s3v4\". Some providers only support \"s3\"."
 msgstr "Standard je \"s3v4\". Neki poslužitelji podržavaju samo \"s3\"."
 
-#: frontend/src/components/GenericPage.vue:381
-#: frontend/src/components/Navbar.vue:288
+#: frontend/src/components/GenericPage.vue:394
+#: frontend/src/components/Navbar.vue:278
 msgid "Delete"
 msgstr "Izbriši"
 
@@ -218,12 +229,12 @@ msgstr "Polje Dokumenta"
 msgid "Document Type"
 msgstr "Tip Dokumenta"
 
-#: frontend/src/components/Sidebar.vue:130
+#: frontend/src/components/Sidebar.vue:149
 msgid "Documentation"
 msgstr "Dokumentacija"
 
-#: frontend/src/components/GenericPage.vue:305
-#: frontend/src/components/Navbar.vue:223
+#: frontend/src/components/GenericPage.vue:318
+#: frontend/src/components/Navbar.vue:213
 msgid "Download"
 msgstr "Preuzmi"
 
@@ -235,106 +246,111 @@ msgstr "Drive"
 #. Name of a DocType
 #: drive/drive/doctype/drive_comment/drive_comment.json
 msgid "Drive Comment"
-msgstr "Drive Komentar"
+msgstr "Komentar"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_desktop_client/drive_desktop_client.json
 msgid "Drive Desktop Client"
-msgstr "Drive Desktop Klijent"
+msgstr "Desktop Klijent"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_disk_settings/drive_disk_settings.json
 msgid "Drive Disk Settings"
-msgstr "Postavke Drive Diska"
+msgstr "Postavke"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_doc_version/drive_doc_version.json
 msgid "Drive Doc Version"
-msgstr "Drive Verzija Dokumenta"
+msgstr "Verzija Dokumenta"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_document/drive_document.json
 msgid "Drive Document"
-msgstr "Drive Dokument"
+msgstr "Dokument"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_document_version/drive_document_version.json
 msgid "Drive Document Version"
-msgstr "Drive Verzija Dokumenta"
+msgstr "Verzija Dokumenta"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_entity_activity_log/drive_entity_activity_log.json
 msgid "Drive Entity Activity Log"
-msgstr "Drive Zapisnik Aktivnosti Entiteta"
+msgstr "Zapisnik Aktivnosti"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_entity_log/drive_entity_log.json
 msgid "Drive Entity Log"
-msgstr "Drive Entitet Zapisnik"
+msgstr "Zapisnik"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_entity_tag/drive_entity_tag.json
 msgid "Drive Entity Tag"
-msgstr "Drive Entitet Oznaka"
+msgstr "Oznaka"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_favourite/drive_favourite.json
 msgid "Drive Favourite"
-msgstr "Drive Favorit"
+msgstr "Favorit"
 
 #. Label of the entity (Link) field in DocType 'Drive Favourite'
 #. Name of a DocType
 #: drive/drive/doctype/drive_favourite/drive_favourite.json
 #: drive/drive/doctype/drive_file/drive_file.json
 msgid "Drive File"
-msgstr "Drive Datoteka"
+msgstr "Datoteka"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_file_update/drive_file_update.json
 msgid "Drive File Update"
-msgstr "Ažuriranje Datoteke Diska"
+msgstr "Ažuriranje Datoteke"
 
 #. Label of the root_folder (Data) field in DocType 'Drive Disk Settings'
 #: drive/drive/doctype/drive_disk_settings/drive_disk_settings.json
 msgid "Drive Folder"
-msgstr "Drive Datoteka"
+msgstr "Mapa"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_notification/drive_notification.json
 msgid "Drive Notification"
-msgstr "Drive Obavještenje"
+msgstr "Obavještenje"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_permission/drive_permission.json
 msgid "Drive Permission"
-msgstr "Drive Dozvola"
+msgstr "Dozvola"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_settings/drive_settings.json
 msgid "Drive Settings"
-msgstr "Drive Postavke"
+msgstr "Postavke"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_tag/drive_tag.json
 msgid "Drive Tag"
-msgstr "Drive Oznaka"
+msgstr "Oznaka"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_team/drive_team.json
 msgid "Drive Team"
-msgstr "Drive Tim"
+msgstr "Tim"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_team_member/drive_team_member.json
 msgid "Drive Team Member"
-msgstr "Član Drive Tima"
+msgstr "Član Tima"
+
+#. Name of a DocType
+#: drive/drive/doctype/drive_transfer/drive_transfer.json
+msgid "Drive Transfer"
+msgstr "Prijenos"
 
 #. Name of a DocType
 #: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
 msgid "Drive User Invitation"
-msgstr "Drive Pozivnica Korisnika"
+msgstr "Pozivnica Korisnika"
 
-#: frontend/src/components/Settings/UserListSettings.vue:527
+#: frontend/src/components/Settings/UserListSettings.vue:533
 msgid "Edit"
 msgstr "Uredi"
 
@@ -353,7 +369,7 @@ msgstr "Uredi profil"
 msgid "Email"
 msgstr "E-pošta"
 
-#: frontend/src/components/Navbar.vue:317
+#: frontend/src/components/Navbar.vue:307
 msgid "Empty"
 msgstr "Prazno"
 
@@ -399,8 +415,8 @@ msgstr "Primjer formata: https://s3.ap-south-1.amazonaws.com"
 msgid "Expired"
 msgstr "Isteklo"
 
-#: frontend/src/components/GenericPage.vue:342
-#: frontend/src/components/Navbar.vue:259
+#: frontend/src/components/GenericPage.vue:355
+#: frontend/src/components/Navbar.vue:249
 msgid "Favourite"
 msgstr "Favorit"
 
@@ -409,18 +425,23 @@ msgstr "Favorit"
 msgid "File Size"
 msgstr "Veličina datoteke"
 
-#: frontend/src/components/Sidebar.vue:188
+#. Label of the file_size (Int) field in DocType 'Drive Transfer'
+#: drive/drive/doctype/drive_transfer/drive_transfer.json
+msgid "File size"
+msgstr "Veličina datoteke"
+
+#: frontend/src/components/DriveToolBar.vue:40
 msgid "Find"
 msgstr "Traži"
 
-#: frontend/src/components/Settings/ProfileSettings.vue:83
+#: frontend/src/components/Settings/ProfileSettings.vue:82
 msgid "First Name"
 msgstr "Ime"
 
 #. Label of the from_user (Link) field in DocType 'Drive Notification'
 #: drive/drive/doctype/drive_notification/drive_notification.json
 msgid "From User"
-msgstr "Od korisnika"
+msgstr "Od Korisnika"
 
 #. Label of the general_section (Section Break) field in DocType 'Drive Disk
 #. Settings'
@@ -442,10 +463,11 @@ msgstr "Idi na Drive"
 #. Name of a role
 #: drive/drive/doctype/drive_document/drive_document.json
 #: drive/drive/doctype/drive_file/drive_file.json
+#: drive/drive/doctype/drive_team/drive_team.json
 msgid "Guest"
 msgstr "Gost"
 
-#: frontend/src/utils/files.js:214
+#: frontend/src/utils/files.js:209
 msgid "Home"
 msgstr "Početna"
 
@@ -465,7 +487,7 @@ msgstr "Ikona"
 msgid "In MB"
 msgstr "U MB"
 
-#: frontend/src/components/Sidebar.vue:193
+#: frontend/src/components/Sidebar.vue:212
 msgid "Inbox"
 msgstr "Pristigla Pošta"
 
@@ -477,7 +499,7 @@ msgstr "Pozovi"
 #. Label of the is_active (Int) field in DocType 'Drive File'
 #: drive/drive/doctype/drive_file/drive_file.json
 msgid "Is Active"
-msgstr "Aktivan"
+msgstr "Aktivno"
 
 #. Label of the is_group (Check) field in DocType 'Drive File'
 #: drive/drive/doctype/drive_file/drive_file.json
@@ -517,7 +539,7 @@ msgstr "Posljednja Interakcija"
 msgid "Last Modified"
 msgstr "Posljednja Izmjena"
 
-#: frontend/src/components/Settings/ProfileSettings.vue:88
+#: frontend/src/components/Settings/ProfileSettings.vue:87
 msgid "Last Name"
 msgstr "Prezime"
 
@@ -541,7 +563,7 @@ msgstr "Učitaj više"
 msgid "Loading..."
 msgstr "Učitavanje u toku..."
 
-#: frontend/src/components/Sidebar.vue:156
+#: frontend/src/components/Sidebar.vue:175
 msgid "Log out"
 msgstr "Odjava"
 
@@ -556,7 +578,7 @@ msgid "MIME Type"
 msgstr "MIME Tip"
 
 #: frontend/src/components/InfoPopup.vue:106
-#: frontend/src/components/Sidebar.vue:101
+#: frontend/src/components/Sidebar.vue:120
 msgid "Manage"
 msgstr "Upravljaj"
 
@@ -594,17 +616,17 @@ msgstr "Meta Vrijednost"
 
 #. Label of the _modified (Datetime) field in DocType 'Drive File'
 #: drive/drive/doctype/drive_file/drive_file.json
-#: frontend/src/components/DriveToolBar.vue:252
+#: frontend/src/components/DriveToolBar.vue:251
 #: frontend/src/components/InfoPopup.vue:41
 msgid "Modified"
 msgstr "Izmijenjeno"
 
-#: frontend/src/components/GenericPage.vue:321
-#: frontend/src/components/Navbar.vue:241
+#: frontend/src/components/GenericPage.vue:334
+#: frontend/src/components/Navbar.vue:231
 msgid "Move"
 msgstr "Premjesti"
 
-#: frontend/src/components/DriveToolBar.vue:244
+#: frontend/src/components/DriveToolBar.vue:243
 #: frontend/src/components/ListView.vue:131
 msgid "Name"
 msgstr "Naziv"
@@ -618,7 +640,7 @@ msgstr "Novi"
 msgid "New Tag"
 msgstr "Nova Oznaka"
 
-#: frontend/src/components/Settings/UserListSettings.vue:365
+#: frontend/src/components/Settings/UserListSettings.vue:372
 msgid "New Team"
 msgstr "Novi Tim"
 
@@ -627,7 +649,11 @@ msgstr "Novi Tim"
 msgid "New Value"
 msgstr "Nova Vrijednost"
 
-#: drive/public/js/ff_integration.bundle.js:30
+#: frontend/src/components/TagInput.vue:18
+msgid "No tags"
+msgstr "Nema Oznaka"
+
+#: drive/public/js/ff_integration.bundle.js:29
 msgid "No teams available"
 msgstr "Nema dostupnih timova"
 
@@ -661,7 +687,7 @@ msgstr "Stara Vrijednost"
 msgid "Only applies if S3 is turned on."
 msgstr "Primjenjuje se samo ako je S3 uključen."
 
-#: frontend/src/components/GenericPage.vue:291
+#: frontend/src/components/GenericPage.vue:304
 msgid "Open"
 msgstr "Otvori"
 
@@ -670,11 +696,11 @@ msgstr "Otvori"
 msgid "Open in Drive"
 msgstr "Otvori na Drive"
 
-#: frontend/src/components/Sidebar.vue:146
+#: frontend/src/components/Sidebar.vue:165
 msgid "Others"
 msgstr "Ostalo"
 
-#: frontend/src/components/DriveToolBar.vue:248
+#: frontend/src/components/DriveToolBar.vue:247
 #: frontend/src/components/InfoPopup.vue:19
 #: frontend/src/components/ListView.vue:150
 msgid "Owner"
@@ -686,14 +712,16 @@ msgid "Parent Entity"
 msgstr "Nadređeni Entitet"
 
 #. Label of the path (Text) field in DocType 'Drive File'
+#. Label of the path (Data) field in DocType 'Drive Transfer'
 #: drive/drive/doctype/drive_file/drive_file.json
+#: drive/drive/doctype/drive_transfer/drive_transfer.json
 msgid "Path"
 msgstr "Put"
 
 #. Option for the 'Status' (Select) field in DocType 'Drive User Invitation'
 #: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
 msgid "Pending"
-msgstr "Na čekanju"
+msgstr "Na Čekanju"
 
 #: drive/drive/doctype/drive_file/drive_file.js:6
 msgid "Permissions"
@@ -704,7 +732,7 @@ msgstr "Dozvole"
 msgid "Personal"
 msgstr "Lična"
 
-#: frontend/src/components/Settings/ProfileSettings.vue:95
+#: frontend/src/components/Settings/ProfileSettings.vue:94
 msgid "Preferences"
 msgstr "Postavke"
 
@@ -713,7 +741,7 @@ msgstr "Postavke"
 msgid "Prefix"
 msgstr "Prefiks"
 
-#: frontend/src/components/GenericPage.vue:285
+#: frontend/src/components/GenericPage.vue:298
 msgid "Preview"
 msgstr "Pregled"
 
@@ -773,12 +801,12 @@ msgstr "Referent Datateka"
 msgid "Referrer ID"
 msgstr "Referent"
 
-#: frontend/src/components/GenericPage.vue:368
+#: frontend/src/components/GenericPage.vue:381
 msgid "Remove from Recents"
 msgstr "Ukloni iz Nedavnih"
 
-#: frontend/src/components/GenericPage.vue:329
-#: frontend/src/components/Navbar.vue:247
+#: frontend/src/components/GenericPage.vue:342
+#: frontend/src/components/Navbar.vue:237
 msgid "Rename"
 msgstr "Preimenuj"
 
@@ -805,8 +833,8 @@ msgstr "S3"
 msgid "S3 Bucket"
 msgstr "S3 Bucket"
 
-#: frontend/src/components/DriveToolBar.vue:40
-#: frontend/src/components/EmojiPicker.vue:28
+#: frontend/src/components/EmojiPicker.vue:22
+#: frontend/src/components/Sidebar.vue:207
 msgid "Search"
 msgstr "Traži"
 
@@ -817,7 +845,7 @@ msgstr "Postavi boju"
 #. Label of the settings (JSON) field in DocType 'Drive Document'
 #: drive/drive/doctype/drive_document/drive_document.json
 #: frontend/src/components/Settings/SettingsDialog.vue:16
-#: frontend/src/components/Sidebar.vue:151
+#: frontend/src/components/Sidebar.vue:170
 msgid "Settings"
 msgstr "Postavke"
 
@@ -825,17 +853,17 @@ msgstr "Postavke"
 #. Label of the share (Check) field in DocType 'Drive Permission'
 #: drive/drive/doctype/drive_notification/drive_notification.json
 #: drive/drive/doctype/drive_permission/drive_permission.json
-#: frontend/src/components/GenericPage.vue:298
-#: frontend/src/components/Navbar.vue:215
+#: frontend/src/components/GenericPage.vue:311
+#: frontend/src/components/Navbar.vue:205
 msgid "Share"
 msgstr "Dijeli"
 
-#: frontend/src/components/InfoPopup.vue:132 frontend/src/utils/files.js:205
+#: frontend/src/components/InfoPopup.vue:132 frontend/src/utils/files.js:199
 msgid "Shared"
 msgstr "Podijeljeno"
 
-#: frontend/src/components/GenericPage.vue:335
-#: frontend/src/components/Navbar.vue:253
+#: frontend/src/components/GenericPage.vue:348
+#: frontend/src/components/Navbar.vue:243
 msgid "Show Info"
 msgstr "Prikaži Informacije"
 
@@ -854,13 +882,13 @@ msgstr "Registrovan/a"
 msgid "Single Click"
 msgstr "Jedan Klik"
 
-#: frontend/src/components/DriveToolBar.vue:256
+#: frontend/src/components/DriveToolBar.vue:255
 #: frontend/src/components/InfoPopup.vue:33
 #: frontend/src/components/ListView.vue:186
 msgid "Size"
 msgstr "Veličina"
 
-#: frontend/src/components/DriveToolBar.vue:272
+#: frontend/src/components/DriveToolBar.vue:271
 msgid "Smart"
 msgstr "Pametno"
 
@@ -893,7 +921,7 @@ msgstr "Status"
 msgid "Storage"
 msgstr "Pohranjivanje"
 
-#: frontend/src/components/Sidebar.vue:135
+#: frontend/src/components/Sidebar.vue:154
 msgid "Support"
 msgstr "Podrška"
 
@@ -908,6 +936,7 @@ msgstr "Podrška"
 #: drive/drive/doctype/drive_permission/drive_permission.json
 #: drive/drive/doctype/drive_settings/drive_settings.json
 #: drive/drive/doctype/drive_team/drive_team.json
+#: drive/drive/doctype/drive_transfer/drive_transfer.json
 #: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
 msgid "System Manager"
 msgstr "Upravitelj Sistema"
@@ -934,7 +963,7 @@ msgstr "Oznake"
 #: drive/drive/doctype/drive_notification/drive_notification.json
 #: drive/drive/doctype/drive_permission/drive_permission.json
 #: drive/drive/doctype/drive_user_invitation/drive_user_invitation.json
-#: frontend/src/components/Settings/StorageSettings.vue:24
+#: frontend/src/components/Settings/StorageSettings.vue:22
 msgid "Team"
 msgstr "Tim"
 
@@ -954,10 +983,6 @@ msgstr "Prefiks Tima"
 msgid "Teams"
 msgstr "Timovi"
 
-#: frontend/src/components/TagInput.vue:22
-msgid "This file has no tags"
-msgstr "Ova datoteka nema oznaka"
-
 #. Label of the thumbnail_prefix (Data) field in DocType 'Drive Disk Settings'
 #: drive/drive/doctype/drive_disk_settings/drive_disk_settings.json
 msgid "Thumbnail prefix"
@@ -968,11 +993,13 @@ msgstr "Prefiks Minijature"
 #. Label of the title (Data) field in DocType 'Drive File'
 #. Label of the title (Data) field in DocType 'Drive Tag'
 #. Label of the title (Small Text) field in DocType 'Drive Team'
+#. Label of the title (Data) field in DocType 'Drive Transfer'
 #: drive/drive/doctype/drive_doc_version/drive_doc_version.json
 #: drive/drive/doctype/drive_document_version/drive_document_version.json
 #: drive/drive/doctype/drive_file/drive_file.json
 #: drive/drive/doctype/drive_tag/drive_tag.json
 #: drive/drive/doctype/drive_team/drive_team.json
+#: drive/drive/doctype/drive_transfer/drive_transfer.json
 #: frontend/src/components/Settings/NewTagDialog.vue:19
 msgid "Title"
 msgstr "Naziv"
@@ -986,7 +1013,7 @@ msgstr "Za korisnika"
 #. Label of the type (Select) field in DocType 'Drive Notification'
 #: drive/drive/doctype/drive_file_update/drive_file_update.json
 #: drive/drive/doctype/drive_notification/drive_notification.json
-#: frontend/src/components/DriveToolBar.vue:260
+#: frontend/src/components/DriveToolBar.vue:259
 #: frontend/src/components/InfoPopup.vue:27
 msgid "Type"
 msgstr "Tip"
@@ -996,8 +1023,8 @@ msgstr "Tip"
 msgid "URL Args"
 msgstr "URL Argumenti"
 
-#: frontend/src/components/GenericPage.vue:355
-#: frontend/src/components/Navbar.vue:270
+#: frontend/src/components/GenericPage.vue:368
+#: frontend/src/components/Navbar.vue:260
 msgid "Unfavourite"
 msgstr "Ukloni Favorit"
 
@@ -1071,9 +1098,9 @@ msgstr "Vlasnik"
 msgid "Writer Settings"
 msgstr "Vlasničke Postavke"
 
-#: frontend/src/components/Settings/StorageSettings.vue:21
+#: frontend/src/components/Settings/StorageSettings.vue:19
 msgid "You"
-msgstr "Vi"
+msgstr "Ti"
 
 #. Option for the 'Action Type' (Select) field in DocType 'Drive Entity
 #. Activity Log'

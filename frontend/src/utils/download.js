@@ -4,7 +4,7 @@ import { printDoc } from "./files"
 import emitter from "@/emitter"
 import router from "@/router"
 import html2pdf from "html2pdf.js"
-import editorStyle from "@/components/DocEditor/editor.css?inline"
+import editorStyle from "@/components/DocEditor/styles/editor.css?inline"
 import globalStyle from "@/index.css?inline"
 
 async function getPdfFromDoc(entity_name) {
@@ -20,7 +20,7 @@ async function getPdfFromDoc(entity_name) {
               <style>${editorStyle}</style>
             </head>
             <body>
-              <div class="Prosemirror prose-sm" style='padding-left: 40px; padding-right: 40px; padding-top: 20px; padding-bottom: 20px; margin: 0;'>
+              <div class="ProseMirror prose-sm" style='padding-left: 40px; padding-right: 40px; padding-top: 20px; padding-bottom: 20px; margin: 0;'>
                 ${raw_html}
               </div>
             </body>
@@ -31,7 +31,7 @@ async function getPdfFromDoc(entity_name) {
   await pdfBlob
   return pdfBlob.prop.pdf.output("arraybuffer")
 }
-export function entitiesDownload(team, entities) {
+export function entitiesDownload(team, entities, transfer = false) {
   if (entities.length === 1) {
     if (entities[0].mime_type === "frappe_doc") {
       if (router.currentRoute.value.name) {
@@ -47,7 +47,9 @@ export function entitiesDownload(team, entities) {
     }
     return entities[0].is_group
       ? folderDownload(team, entities[0])
-      : (window.location.href = `/api/method/drive.api.files.get_file_content?entity_name=${entities[0].name}&trigger_download=1`)
+      : (window.location.href = `/api/method/drive.api.files.get_file_content?entity_name=${
+          entities[0].name
+        }&trigger_download=1${transfer ? "&transfer=1" : ""}`)
   }
 
   const t = toast("Preparing download...")
@@ -151,7 +153,7 @@ function get_file_content(entity) {
   const fileUrl =
     entity.src ||
     "/api/method/" +
-      `drive.api.files.get_file_content?entity_name=${entity.name}`
+      `drive.api.files.get_file_content?entity_name=${entity.name}&trigger_download=1`
 
   return fetch(fileUrl).then((response) => {
     if (response.ok) {

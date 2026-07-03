@@ -37,7 +37,7 @@
     </div>
     <div
       id="editorScrollContainer"
-      class="flex w-full overflow-y-auto"
+      class="flex-1 flex w-full overflow-y-auto"
     >
       <div
         class="mx-auto cursor-text w-full flex justify-center h-full"
@@ -57,7 +57,7 @@
           ref="textEditor"
           class="min-w-full h-full flex flex-col"
           :editor-class="[
-            'prose-sm min-h-full mx-auto px-10 overflow-x-auto pt-4 md:pt-0',
+            'prose-sm min-h-full mx-auto px-10 overflow-x-auto py-14',
             `text-[${settings?.font_size || 15}px]`,
             `leading-[${settings?.line_height || 1.5}]`,
             settings?.wide
@@ -76,19 +76,11 @@
               })
             }
           "
-          :mentions="users"
+          :mentions="{ mentions: users, selectable: false }"
           placeholder="Start writing here..."
           :bubble-menu="settings.minimal && menuButtons"
           :extensions="editorExtensions"
           :autofocus="true"
-          @transaction="
-            () => {
-              if (collabTurned && doc) {
-                yjsContent = Y.encodeStateAsUpdate(doc)
-                emit('saveDocument')
-              }
-            }
-          "
           @change="
             (val) => {
               if (val === rawContent || current) return
@@ -128,8 +120,7 @@
         v-model:comments="comments"
         :entity="entity"
         :editor
-        @save="$emit('saveComment')"
-        @autosave="autosave"
+        @save="console.log('recieved'), $emit('saveComment')"
       />
     </div>
   </div>
@@ -139,6 +130,7 @@
 import {
   TextEditor as FTextEditor,
   TextEditorFixedMenu,
+  createResource,
   debounce,
   useFileUpload,
 } from "frappe-ui"
@@ -200,7 +192,6 @@ const props = defineProps({
   editable: Boolean,
   isFrappeDoc: Boolean,
   showResolved: Boolean,
-  collabTurned: Boolean,
   users: Object,
   currentVersion: { required: false, type: Object },
 })
@@ -309,6 +300,10 @@ const editorExtensions = [
 
 let prov, doc, localstorage
 const collab = computed(() => props.settings?.collab)
+import { yDocToProsemirrorJSON } from "y-prosemirror"
+import { Editor } from "@tiptap/core"
+import { isModKey } from "@/utils/files"
+
 if (collab.value) {
   doc = new Y.Doc({ gc: true })
   localstorage = new IndexeddbPersistence("fdoc-" + props.entity.name, doc) // eslint-disable-line
@@ -316,6 +311,21 @@ if (collab.value) {
 
   prov = new WebrtcProvider("fdoc-" + props.entity.name, doc, {
     signaling: ["wss://signal.frappe.cloud"],
+    peerOpts: {
+      config: {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          {
+            urls: [
+              "turn:signal.frappe.cloud:3478?transport=udp",
+              "turn:signal.frappe.cloud:3478?transport=tcp",
+            ],
+            username: "turnuser",
+            credential: "turnpass",
+          },
+        ],
+      },
+    },
   })
   const permanentUserData = new Y.PermanentUserData(doc)
   permanentUserData.setUserMapping(doc, doc.clientID, store.state.user.id)
@@ -389,8 +399,8 @@ const menuButtons = computed(() =>
               defineAsyncComponent(() => import("./components/FontFamily.vue")),
               {
                 editor,
-                font_size: props.settings.font_size,
-                font_family: props.settings.font_family,
+                font_size: props.settings.font_size || 15,
+                font_family: props.settings.font_family || "inter",
               }
             ),
           },
@@ -455,10 +465,11 @@ if (props.entity.write) {
 }
 
 // Util functions
-const evalImplicitTitle = (bypass = false) => {
+const autorename = (bypass = false) => {
   const { $anchor } = editor.value.view.state.selection
   // Check if we're in the very first textblock
   if (!($anchor.index(0) === 1 && $anchor.depth === 1)) {
+    // scroll down if in the last line
     if (
       $anchor.depth === 1 &&
       editor.value.state.doc.childCount - 1 === $anchor.index(0)
@@ -472,21 +483,20 @@ const evalImplicitTitle = (bypass = false) => {
     .replaceAll("@", "")
     .trim()
   if (!props.entity.title.startsWith("Untitled Document") && !bypass) {
-    if (implicitTitle !== props.entity.title)
-      toast({
-        title: `Update title?`,
-        buttons: [{ label: "Rename", onClick: () => evalImplicitTitle(true) }],
-      })
+    // disable to improve ux
+    // if (implicitTitle !== props.entity.title)
+    //   toast({
+    //     title: `Update title?`,
+    //     buttons: [{ label: "Rename", onClick: () => autorename(true) }],
+    //   })
     return
   }
 
-  if (implicitTitle.length === 0) return
-  if (implicitTitle.length) {
+  if (implicitTitle.length)
     rename.submit({
       entity_name: props.entity.name,
       new_title: implicitTitle,
     })
-  }
 }
 
 const getOrderedComments = (doc) => {
@@ -527,14 +537,14 @@ const createNewComment = (editor) => {
 
 // Events
 onKeyDown("p", (e) => {
-  if (e.metaKey) {
+  if (isModKey(e)) {
     e.preventDefault()
-    if (editor.value) printDoc(editor.value.getHTML())
+    if (editor.value) printDoc(editor.value.getHTML(), props.settings)
   }
 })
 
 emitter.on("printFile", () => {
-  if (editor.value) printDoc(editor.value.getHTML())
+  if (editor.value) printDoc(editor.value.getHTML(), props.settings)
 })
 emitter.on("create-version", (title) => {
   const snap = Y.snapshot(doc)
@@ -562,7 +572,7 @@ onBeforeUnmount(() => {
   }
 })
 
-onKeyDown("Enter", () => evalImplicitTitle())
+onKeyDown("Enter", () => autorename())
 onKeyDown("s", (e) => {
   if (!e.metaKey || !e.shiftKey) {
     return
@@ -573,9 +583,37 @@ onKeyDown("s", (e) => {
     title: "Saving document",
   })
 })
+
+const syncToWiki = async (wiki_space, group, entity_names) => {
+  for (let k of entity_names) {
+    const data = await createResource({
+      url: "drive.api.wiki_integration.get_yjs_content",
+      params: { entity_name: k },
+    }).fetch()
+    let pre_doc = new Y.Doc({ gc: true })
+    Y.applyUpdate(pre_doc, toUint8Array(data))
+    let obj = yDocToProsemirrorJSON(pre_doc, "default")
+    let editor = new Editor({
+      content: obj,
+      extensions: textEditor.value.DEFAULT_EXTENSIONS,
+    })
+    await createResource({
+      url: "drive.api.wiki_integration.sync_to_wiki_page",
+      params: { entity_name: k, html: editor.getHTML(), wiki_space, group },
+    }).fetch()
+  }
+}
+
+window.run = () => syncToWiki(["uu9pbukv8s", "5fpvulc7so"])
+const socket = inject("socket")
+socket.on("sync_to_wiki", (data) => {
+  for (let [title, pages] of Object.entries(data.groups)) {
+    syncToWiki(data.space, title, pages)
+  }
+})
 </script>
 <style>
-@import url("./editor.css");
+@import url("./styles/editor.css");
 iframe {
   border: 1px solid var(--surface-gray-4) !important;
 }

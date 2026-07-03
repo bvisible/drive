@@ -51,7 +51,7 @@
                   #node="{ node, hasChildren, isCollapsed, toggleCollapsed }"
                 >
                   <div
-                    class="flex items-center cursor-pointer select-none gap-1 h-7"
+                    class="flex items-center cursor-pointer select-none gap-1 h-7 shrink-0"
                     @click="openEntity(node)"
                   >
                     <div
@@ -115,11 +115,14 @@
                           @keydown.enter="openEntity(node)"
                         />
                       </div>
-                      <span v-else>{{ node.label }}
+                      <span v-else
+                        >{{ node.label }}
                         <span
                           v-if="entities[0].parent_entity === node.value"
                           class="text-ink-gray-5"
-                        >(current)</span></span>
+                          >(current)</span
+                        ></span
+                      >
                       <Button
                         class="shrink hidden group-hover:block ml-auto"
                         :class="{
@@ -151,10 +154,12 @@
               </div>
               <div
                 v-else-if="!tree.children.length"
-                class="text-base flex justify-center flex-1"
+                class="flex justify-center flex-1"
               >
-                <div class="self-center text-ink-gray-6 flex flex-col gap-2">
-                  <LucideFolderClosed class="size-6 self-center" />
+                <div
+                  class="self-center text-sm text-ink-gray-6 flex flex-col gap-2"
+                >
+                  <LucideFolderClosed class="size-5 self-center" />
                   No folders found
                 </div>
               </div>
@@ -163,9 +168,7 @@
         </Tabs>
         <div class="flex items-center justify-between pt-4">
           <div class="flex items-center my-auto justify-start">
-            <p class="text-sm pr-0.5">
-              Moving to:
-            </p>
+            <p class="text-sm pr-0.5">Moving to:</p>
             <Dropdown
               v-if="dropDownBreadcrumbs.length"
               class="h-7"
@@ -210,10 +213,7 @@
             variant="solid"
             class="ml-auto"
             size="sm"
-            :disabled="
-              entities[0].parent_entity !== selected &&
-                chosenTeam === entities[0].team
-            "
+            :disabled="isMoveDisabled"
             :loading="move.loading"
             @click="moveFile"
           >
@@ -268,6 +268,7 @@ const store = useStore()
 const route = useRoute()
 const in_home = store.state.breadcrumbs[0].name == "Home"
 const tabIndex = ref(in_home ? 0 : 1)
+console.log(route.params)
 const chosenTeam = ref(route.params.team || "")
 const tree = reactive({
   name: "",
@@ -333,6 +334,13 @@ const fetchFolderContents = (tree, params = {}, nested = false) => {
     },
   })
 }
+const homeTeam = createResource({
+  url: "drive.utils.get_default_team",
+  params: {
+    with_file: true,
+  },
+  auto: true,
+})
 
 const selectedPerms = createResource({
   url: "drive.api.permissions.get_entity_with_permissions",
@@ -387,6 +395,15 @@ const slicedBreadcrumbs = computed(() => {
     return breadcrumbs.value.slice(-3)
   }
   return breadcrumbs.value
+})
+const isMoveDisabled = computed(() => {
+  const parent = props.entities[0].parent_entity
+  console.log(getTeams.data?.[chosenTeam.value])
+  if (!selected.value) {
+    // buggy: does not check for team root files
+    if (!chosenTeam.value && homeTeam.data?.file === parent) return true
+  }
+  return parent === selected.value
 })
 
 const dropDownBreadcrumbs = computed(() => {

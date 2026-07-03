@@ -12,12 +12,14 @@ import {
 } from "@/resources/files"
 import { getTeams } from "@/resources/files"
 import { set } from "idb-keyval"
-import editorStyle from "@/components/DocEditor/editor.css?inline"
+import editorStyle from "@/components/DocEditor/styles/editor.css?inline"
 import globalStyle from "@/index.css?inline"
 import slugify from "slugify"
 import { toast } from "@/utils/toasts.js"
 import { useFileUpload, toast as nToast } from "frappe-ui"
 import emitter from "@/emitter"
+import { createLowlight, common } from "lowlight"
+import { toHtml } from "hast-util-to-html"
 
 export const openEntity = (entity, new_tab = false) => {
   if (!entity.is_group) {
@@ -173,16 +175,6 @@ export const sortEntities = (rows, order) => {
   return rows
 }
 
-export const manageBreadcrumbs = (to) => {
-  if (
-    store.state.breadcrumbs[store.state.breadcrumbs.length - 1]?.name !==
-    to.params.entityName
-  ) {
-    store.state.breadcrumbs.splice(1)
-    store.state.breadcrumbs.push({ loading: true })
-  }
-}
-
 export const groupByFolder = (entities) => {
   return {
     Folders: entities.filter((x) => x.is_group === 1),
@@ -201,13 +193,15 @@ export const prettyData = (entities) => {
 export const setBreadCrumbs = (entity) => {
   const breadcrumbs = entity.breadcrumbs
   const in_home = entity.in_home
-  let res = [
-    {
-      label: __("Shared"),
-      name: "Shared",
-      route: store.getters.isLoggedIn && "/shared",
-    },
-  ]
+  let res = store.getters.isLoggedIn
+    ? [
+        {
+          label: __("Shared"),
+          name: "Shared",
+          route: "/shared",
+        },
+      ]
+    : []
   const team = getTeams.data?.[breadcrumbs[0].team]
   if (team || in_home)
     res = [
@@ -368,17 +362,53 @@ export function enterFullScreen() {
   }
 }
 
-export function printDoc(html) {
+function highlightCodeBlocks(html) {
+  const lowlight = createLowlight(common)
+  const doc = new DOMParser().parseFromString(html, "text/html")
+  doc.querySelectorAll("pre code").forEach((block) => {
+    const result = lowlight.highlightAuto(block.textContent)
+    block.innerHTML = toHtml(result)
+  })
+
+  return doc.body.innerHTML
+}
+
+export function printDoc(html, settings = {}) {
+  const highlightedHtml = highlightCodeBlocks(html)
+  const fontMap = {
+    caveat: "var(--font-caveat)",
+    "comic-sans": "var(--font-comic-sans)",
+    comfortaa: "var(--font-comfortaa)",
+    "eb-garamond": "var(--font-eb-garamond)",
+    fantasy: "fantasy",
+    geist: "var(--font-geist)",
+    "ibm-plex": "var(--font-ibm-plex)",
+    inter: "var(--font-inter)",
+    jetbrains: "var(--font-jetbrains)",
+    lora: "var(--font-lora)",
+    merriweather: "var(--font-merriweather)",
+    nunito: "var(--font-nunito)",
+  }
+  const fontFamily = fontMap[settings?.font_family]
+  const fontSize = settings?.font_size
+  const lineHeight = settings?.line_height
   const content = `
             <!DOCTYPE html>
             <html>
               <head>
-                <style>${globalStyle}</style>
-                <style>${editorStyle}</style>
+              <style>${globalStyle}</style>
+              <style>${editorStyle}</style>
+              <style>
+                .ProseMirror {
+                  font-family: ${fontFamily} !important;
+                  font-size: ${fontSize}px;
+                  line-height: ${lineHeight}px;
+                }
+              </style>
               </head>
               <body>
-                <div class="Prosemirror prose-sm" style='padding-left: 40px; padding-right: 40px; padding-top: 20px; padding-bottom: 20px; margin: 0;'>
-                  ${html}
+                <div class="ProseMirror prose-sm" style='padding-left: 40px; padding-right: 40px; padding-top: 20px; padding-bottom: 20px; margin: 0;'>
+                  ${highlightedHtml}
                 </div>
               </body>
             </html>
@@ -530,8 +560,8 @@ export const pasteObj = (e) => {
     const file = clipboardItems
       .find((item) => item.type.includes("image"))
       ?.getAsFile()
-    if (file) {
-      const route = router.currentRoute.value
+    const route = router.currentRoute.value
+    if (file && ["Home", "Folder", "Team"].includes(route.name)) {
       const entity = uploadImage(file, {
         team: route.params.team,
         parent: route.params.entityName || "",
@@ -688,7 +718,6 @@ export const newExternal = async (type) => {
     ? createDocument
     : createPresentation
   ).submit({
-    title: "Untitled " + type,
     team: route.params.team,
     parent: store.state.currentFolder.name,
   })
@@ -702,6 +731,19 @@ export const newExternal = async (type) => {
       params: { entityName: data.name },
     })
   } else if (type === "Presentation") {
-    window.open("/slides/presentation/" + data.path)
+    window.location.replace("/slides/presentation/" + data.path)
   }
+}
+
+function isApple() {
+  // Pattern borrowed from TinyKeys library.
+  // --
+  // https://github.com/jamiebuilds/tinykeys/blob/e0d23b4f248af59ffbbe52411505c3d681c73045/src/tinykeys.ts#L50-L54
+  var macOsPattern = /Mac|iPod|iPhone|iPad/
+
+  return macOsPattern.test(window.navigator.platform)
+}
+
+export function isModKey(e) {
+  return isApple() ? e.metaKey : e.ctrlKey
 }

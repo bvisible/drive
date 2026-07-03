@@ -208,5 +208,12 @@ def files(
         else:
             r["share_count"] = default
         r |= get_user_access(r["name"])
-
     return res
+
+
+@frappe.whitelist()
+def get_transfers():
+    transfers = frappe.get_list(
+        "Drive Transfer", filters={"owner": frappe.session.user}, fields=["title", "file_size", "creation", "name"]
+    )
+    return transfers

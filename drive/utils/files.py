@@ -4,13 +4,10 @@ from io import BytesIO
 from pathlib import Path
 import shutil
 
-import boto3
 import cv2
 import frappe
 import magic
 import mimemapper
-from botocore.config import Config
-from botocore.exceptions import ClientError
 from PIL import Image, ImageOps
 
 from drive.locks.distributed_lock import DistributedLock
@@ -45,6 +42,9 @@ class FileManager:
         self.prefix_map = {k["name"]: k["prefix"] for k in TEAMS}
 
         if self.s3_enabled:
+            import boto3
+            from botocore.config import Config
+
             self.conn = boto3.client(
                 "s3",
                 aws_access_key_id=settings.aws_key,
@@ -82,26 +82,26 @@ class FileManager:
             or file.mime_type in FileManager.ACCEPTABLE_MIME_TYPES
         )
 
-    def upload_file(self, current_path: Path, drive_file) -> None:
+    def upload_file(self, current_path: Path, drive_file, create_thumbnail=True) -> None:
         """
         Moves the file from the current path to another path
         """
         if self.s3_enabled:
             self.conn.upload_file(current_path, self.get_bucket(drive_file.team), drive_file.path)
-            if drive_file and self.can_create_thumbnail(drive_file):
+            if drive_file and create_thumbnail and self.can_create_thumbnail(drive_file):
                 frappe.enqueue(
                     self.upload_thumbnail,
                     now=True,
                     at_front=True,
                     file=drive_file,
-                    file_path=current_path,
+                    file_path=str(current_path),
                 )
             else:
                 os.remove(current_path)
         else:
             # could break for folders?
             os.rename(current_path, self.site_folder / drive_file.path)
-            if drive_file and self.can_create_thumbnail(drive_file):
+            if drive_file and create_thumbnail and self.can_create_thumbnail(drive_file):
                 frappe.enqueue(
                     self.upload_thumbnail,
                     now=True,
@@ -117,8 +117,8 @@ class FileManager:
         save_path = self.get_thumbnail_path(file.team, file.name).with_suffix(".png")
         disk_path = str(self.site_folder / save_path)
 
-        with DistributedLock(file.path, exclusive=False):
-            try:
+        try:
+            with DistributedLock(file.path, exclusive=False):
                 # Keep image/video thumbnail as `thumbnail` results in very dark thumbnails (albeit better)
                 if file.mime_type.startswith("image"):
                     with Image.open(file_path).convert("RGB") as image:
@@ -166,14 +166,13 @@ class FileManager:
                 else:
                     final_path = disk_path.with_suffix(".thumbnail")
                     disk_path.rename(final_path)
-
-            except BaseException as e:
-                frappe.log_error("Thumbnail failed", e)
-                if self.s3_enabled:
-                    try:
-                        os.remove(file_path)
-                    except FileNotFoundError:
-                        pass
+        except BaseException as e:
+            frappe.log_error("Thumbnail failed", e)
+            if self.s3_enabled:
+                try:
+                    os.remove(file_path)
+                except FileNotFoundError:
+                    pass
 
     def get_disk_path(self, entity: DriveFile, root: dict = None, embed=False):
         """
@@ -192,6 +191,8 @@ class FileManager:
                 if not hasattr(entity, "parent_path")
                 else Path(entity.parent_path)
             )
+            if embed:
+                return parent / ".embeds" / entity.title
             return parent / entity.title
 
     @__not_if_flat
@@ -205,17 +206,20 @@ class FileManager:
             self.conn.put_object(Bucket=self.get_bucket(entity.team), Key=str(path) + "/", Body="")
         else:
             (self.site_folder / path).mkdir()
-        return str(path) + ("/" if entity.is_group else "")
+        return str(path) + "/"
 
-    def get_file(self, entity):
+    def get_file(self, entity, range_header=None):
         """
-        Function to read file from a s3 file.
-
-        Temporary: if not found in S3, look at disk.
+        Function to get a file, with an optional range header for S3 objects
         """
         try:
             if self.s3_enabled:
-                buf = self.conn.get_object(Bucket=self.get_bucket(entity.team), Key=entity.path)["Body"]
+                if range_header:
+                    buf = self.conn.get_object(
+                        Bucket=self.get_bucket(entity.team), Key=entity.path, Range=range_header
+                    )["Body"]
+                else:
+                    buf = self.conn.get_object(Bucket=self.get_bucket(entity.team), Key=entity.path)["Body"]
             else:
                 with open(self.site_folder / entity.path, "rb") as fh:
                     buf = BytesIO(fh.read())
@@ -347,7 +351,7 @@ class FileManager:
 
     @__not_if_flat
     def rename(self, entity):
-        if not entity.path or entity.mime_type.startswith("frappe"):
+        if not entity.path or entity.mime_type == "frappe/slides":
             return
         new_path = self.get_disk_path(entity)
         return self.move(entity, new_path)
@@ -356,6 +360,8 @@ class FileManager:
     def move_to_trash(self, entity: DriveFile):
         if not entity.path or entity.mime_type.startswith("frappe"):
             return
+
+        from botocore.exceptions import ClientError
 
         trash_path = self.__get_trash_path(entity)
         try:
@@ -416,13 +422,19 @@ class FileManager:
 
     def delete_file(self, entity):
         thumbnail_path = self.get_thumbnail_path(entity.team, entity.name)
+
         if self.s3_enabled:
             bucket = self.get_bucket(entity.team)
-            self.conn.delete_object(Bucket=bucket, Key=entity.path)
-            self.conn.delete_object(Bucket=bucket, Key=str(thumbnail_path))
+            try:
+                self.conn.delete_object(Bucket=bucket, Key=entity.path)
+                if thumbnail_path:
+                    self.conn.delete_object(Bucket=bucket, Key=str(thumbnail_path))
+            except:
+                pass
         else:
             try:
                 (self.site_folder / entity.path).unlink()
-                thumbnail_path.unlink()
+                if thumbnail_path:
+                    (self.site_folder / thumbnail_path).unlink()
             except FileNotFoundError:
                 pass

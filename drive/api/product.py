@@ -29,7 +29,7 @@ def create_team(user, team_name=None, icon=None, s3_bucket=None, prefix=None, pe
     team_name = team_name if team_name else frappe.session.user
     exists = frappe.db.exists("Drive Team", {"title": team_name, "owner": user})
     if exists:
-        frappe.throw("There is already a team with this title.", ValueError)
+        return exists
 
     team = frappe.get_doc(
         {
@@ -106,13 +106,35 @@ def get_team_invites(team):
 @frappe.whitelist(allow_guest=True)
 def signup(account_request, first_name, last_name=None, team=None):
     account_request = frappe.get_doc("Account Request", account_request)
-    if not account_request.login_count:
-        frappe.throw("Email not verified")
+    if not account_request.invite and frappe.get_website_settings("disable_signup"):
+        frappe.throw("Signing up is disabled on this site.", frappe.PermissionError)
 
+    if not account_request.login_count:
+        frappe.throw("Please verify the email first.")
+
+    user = create_user(account_request.email, first_name, last_name, True)
+    account_request.signed_up = 1
+    account_request.save(ignore_permissions=True)
+
+    team = None
+    if account_request.invite:
+        invite = frappe.get_doc("Drive User Invitation", account_request.invite)
+        invite.status = "Accepted"
+        invite.save(ignore_permissions=True)
+        if invite.team:
+            # Add to that team
+            team = frappe.get_doc("Drive Team", invite.team)
+            team.append("users", {"user": user.email, "access_level": 0 if invite.as_guest else 1})
+            team.save(ignore_permissions=True)
+            team = invite.team
+    return {"location": f"/drive/t/{team}" if team else "/drive/"}
+
+
+def create_user(email, first_name, last_name=None, login=False):
     user = frappe.get_doc(
         {
             "doctype": "User",
-            "email": account_request.email,
+            "email": email,
             "first_name": escape_html(first_name),
             "last_name": escape_html(last_name),
             "enabled": 1,
@@ -126,40 +148,16 @@ def signup(account_request, first_name, last_name=None, team=None):
         user.insert(ignore_permissions=True)
     except frappe.DuplicateEntryError:
         frappe.throw("User already exists")
-    account_request.signed_up = 1
-
-    team = None
-
-    if account_request.invite:
-        invite = frappe.get_doc("Drive User Invitation", account_request.invite)
-        invite.status = "Accepted"
-        invite.save(ignore_permissions=True)
-        # Add to that team
-        team = frappe.get_doc("Drive Team", invite.team)
-        team.append("users", {"user": account_request.email})
-        team.save(ignore_permissions=True)
-        team = invite.team
-
-    account_request.save(ignore_permissions=True)
-    frappe.local.login_manager.login_as(user.email)
+    if login:
+        frappe.local.login_manager.login_as(user.email)
     doc = frappe.get_doc(
         {
             "doctype": "Drive Settings",
-            "user": account_request.email,
-            "single_click": 1,
+            "user": email,
         }
     )
     doc.insert()
-    # Check invites for this user
-    # if not team:
-    #     # Create team for this user
-    #     domain = user.email.split("@")[-1]
-    #     if domain in CORPORATE_DOMAINS:
-    #         team = create_team(user.email)
-    #     else:
-    #         return get_domain_teams(domain)
-
-    return {"location": "/drive/t/" + team}
+    return user
 
 
 @frappe.whitelist(allow_guest=True)
@@ -203,6 +201,10 @@ def oauth_providers():
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=5, seconds=60)
 def send_otp(email, login):
+    disable_signups = signup_disabled()
+    if not login and disable_signups:
+        frappe.throw("Signing up is disabled on this site.", frappe.PermissionError)
+
     is_login = frappe.db.exists(
         "Account Request",
         {
@@ -211,14 +213,24 @@ def send_otp(email, login):
         },
     )
     if not is_login:
+        signed_up = 0
         if login:
-            frappe.throw("Email account not found!")
+            if not frappe.db.exists("User", email):
+                frappe.throw("This email account is not found. " if disable_signups else "Please sign up first.")
+            signed_up = 1
+
         account_request = frappe.get_doc(
             {
                 "doctype": "Account Request",
                 "email": email,
+                "signed_up": signed_up,
             }
         ).insert(ignore_permissions=True)
+        account_request.set_otp()
+        try:
+            account_request.send_otp()
+        except:
+            frappe.throw("Please setup an email account in Desk.")
         return account_request.name
     else:
         req = frappe.get_doc("Account Request", is_login, ignore_permissions=True)
@@ -226,7 +238,8 @@ def send_otp(email, login):
         try:
             req.send_otp()
         except:
-            frappe.throw("Please setup an email account")
+            pass
+            # frappe.throw("Please setup an email account in Desk.")
         return is_login
 
 
@@ -240,7 +253,6 @@ def verify_otp(account_request, otp):
     req.save(ignore_permissions=True)
     if req.signed_up:
         frappe.local.login_manager.login_as(req.email)
-        return {"location": "/drive"}
 
 
 @frappe.whitelist()
@@ -278,28 +290,8 @@ def set_settings(updates):
     settings.save()
 
 
-@frappe.whitelist(allow_guest=True)
-@rate_limit(limit=5, seconds=60)
-def resend_otp(email):
-    account_request = frappe.db.get_value("Account Request", {"email": email}, "name")
-    if not account_request:
-        frappe.throw("OTP was never requested.")
-
-    account_request = frappe.get_doc("Account Request", account_request)
-
-    # if last OTP was sent less than 30 seconds ago, throw an error
-    if (
-        account_request.otp_generated_at
-        and (frappe.utils.now_datetime() - account_request.otp_generated_at).seconds < 30
-    ):
-        frappe.throw("Please wait for 30 seconds before requesting a new OTP")
-
-    account_request.reset_otp()
-    account_request.send_login_mail()
-
-
 @frappe.whitelist()
-def invite_users(team, emails):
+def invite_users(emails, team=None, as_guest=False, auto=False):
     if not emails:
         return
 
@@ -319,7 +311,8 @@ def invite_users(team, emails):
         invite = frappe.new_doc("Drive User Invitation")
         invite.email = email
         invite.team = team
-        invite.status = "Pending"
+        invite.status = "Automatic" if auto else "Pending"
+        invite.as_guest = as_guest
         invite.insert()
 
 
@@ -340,7 +333,8 @@ def remove_user(team, user_id):
     frappe.delete_doc("Drive Team Member", drive_team[user_id].name)
 
 
-@frappe.whitelist()
+# SECURITY: send user data with files
+@frappe.whitelist(allow_guest=True)
 @default_team
 def get_all_users(team):
     teams = [team] if team != "all" else get_teams()
@@ -365,12 +359,30 @@ def get_all_users(team):
     return users
 
 
+@frappe.whitelist()
+def get_drive_users():
+    users = frappe.get_all(
+        doctype="User",
+        filters=[
+            ["user_type", "=", "Website User"],
+            ["enabled", "=", 1],
+        ],
+        fields=[
+            "name",
+            "email",
+            "full_name",
+            "user_image",
+        ],
+    )
+    return users
+
+
 @frappe.whitelist(allow_guest=True)
 def accept_invite(key, redirect=True):
     try:
         invitation = frappe.get_doc("Drive User Invitation", key)
     except:
-        frappe.throw("Invalid or expired key")
+        frappe.throw("Could not find invitation.")
 
     return invitation.accept(redirect)
 
@@ -380,7 +392,7 @@ def reject_invite(key):
     try:
         invitation = frappe.get_doc("Drive User Invitation", key)
     except:
-        frappe.throw("Invalid or expired key")
+        frappe.throw("Could not find invitation.")
 
     invitation.status = "Expired"
     invitation.save(ignore_permissions=True)
@@ -432,13 +444,24 @@ def disk_settings(**kwargs):
     settings.save()
 
 
+WHITELISTED_DOMAINS = [
+    "https://gameplan.frappe.cloud",
+    "https://frappecloud.com",
+    "https://frappe.io",
+    "https://cloud.frappe.io",
+]
+
+
 def after_request(request):
-    if request.path.startswith("/drive/t/"):
-        frappe.local.response_headers["Content-Security-Policy"] = (
-            "frame-ancestors https://gameplan.frappe.cloud 'self'"
-        )
-        if "X-Frame-Options" in frappe.local.response_headers:
-            del frappe.local.response_headers["X-Frame-Options"]
+    try:
+        if request.path.startswith("/drive/") or request.path.startswith("/api/method/"):
+            frappe.local.response_headers["Content-Security-Policy"] = (
+                f"frame-ancestors {' '.join(WHITELISTED_DOMAINS)} 'self'"
+            )
+            if "X-Frame-Options" in frappe.local.response_headers:
+                del frappe.local.response_headers["X-Frame-Options"]
+    except:
+        pass
 
 
 @frappe.whitelist()

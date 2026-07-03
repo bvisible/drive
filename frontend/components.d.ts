@@ -65,6 +65,7 @@ declare module 'vue' {
     LucideFile: typeof import('~icons/lucide/file')['default']
     LucideFileEdit: typeof import('~icons/lucide/file-edit')['default']
     LucideFileQuestionMark: typeof import('~icons/lucide/file-question-mark')['default']
+    LucideFileUp: typeof import('~icons/lucide/file-up')['default']
     LucideFolder: typeof import('~icons/lucide/folder')['default']
     LucideFolderClosed: typeof import('~icons/lucide/folder-closed')['default']
     LucideFolderPlus: typeof import('~icons/lucide/folder-plus')['default']

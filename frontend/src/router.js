@@ -1,12 +1,22 @@
 import { createRouter, createWebHistory } from "vue-router"
 import store from "./store"
-import { manageBreadcrumbs } from "./utils/files"
 import { createResource } from "frappe-ui"
 import Dummy from "@/pages/Dummy.vue"
+import { getTeams, translate } from "@/resources/files"
+
 function clearStore() {
   store.commit("setActiveEntity", null)
 }
 
+const manageBreadcrumbs = (to) => {
+  if (
+    store.state.breadcrumbs[store.state.breadcrumbs.length - 1]?.name !==
+    to.params.entityName
+  ) {
+    store.state.breadcrumbs.splice(1)
+    store.state.breadcrumbs.push({ loading: true })
+  }
+}
 async function setRootBreadCrumb(to) {
   if (store.getters.isLoggedIn) {
     document.title = __(to.name)
@@ -98,13 +108,10 @@ const routes = [
     beforeEnter: [setRootBreadCrumb],
   },
   {
-    path: "/t/:team/:letter/:entityName/:slug?",
-    component: Dummy,
-    beforeEnter: async (to) => {
-      return {
-        path: `/g/${to.params.entityName}`,
-      }
-    },
+    path: "/transfer",
+    name: "Transfer",
+    component: () => import("@/pages/QuickShare.vue"),
+    beforeEnter: [setRootBreadCrumb],
   },
   {
     path: "/g/:entityName/",
@@ -159,6 +166,61 @@ const routes = [
     props: true,
     beforeEnter: [manageBreadcrumbs],
   },
+  // old redirects
+  {
+    path: "/folder/:entityName",
+    component: () => null,
+    beforeEnter: async (to) => {
+      await getTeams.fetch()
+      await translate.fetch()
+      return {
+        name: "Folder",
+        params: {
+          entityName:
+            translate.data[to.params.entityName] || to.params.entityName,
+        },
+      }
+    },
+  },
+  {
+    path: "/document/:entityName",
+    component: () => null,
+    beforeEnter: async (to) => {
+      await getTeams.fetch()
+      await translate.fetch()
+      return {
+        name: "Document",
+        params: {
+          entityName:
+            translate.data[to.params.entityName] || to.params.entityName,
+        },
+      }
+    },
+  },
+  {
+    path: "/file/:entityName",
+    component: () => null,
+    beforeEnter: async (to) => {
+      await getTeams.fetch()
+      await translate.fetch()
+      return {
+        name: "File",
+        params: {
+          entityName:
+            translate.data[to.params.entityName] || to.params.entityName,
+        },
+      }
+    },
+  },
+  {
+    path: "/t/:team/:letter/:entityName/:slug?",
+    component: Dummy,
+    beforeEnter: async (to) => {
+      return {
+        path: `/g/${to.params.entityName}`,
+      }
+    },
+  },
 ]
 
 let router = createRouter({
@@ -168,7 +230,7 @@ let router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   if (!store.getters.isLoggedIn && !to.meta.allowGuest) {
-    next("/login")
+    next("/login?redirect-to=/drive" + to.path)
   } else {
     if (to.params.team) localStorage.setItem("recentTeam", to.params.team)
     clearStore()

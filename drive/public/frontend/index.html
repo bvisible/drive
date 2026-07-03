@@ -18,10 +18,12 @@
       property="og:description"
       content="{{ description }}"
     />
+    {% if og_image %}
     <meta
       property="og:image"
       content="{{ og_image }}"
     />
+    {% endif %}
 
     <!-- Twitter Meta Tags -->
     <meta
@@ -36,10 +38,12 @@
       name="twitter:description"
       content="{{ description }}"
     />
+    {% if og_image %}
     <meta
       name="twitter:image"
       content="{{ og_image }}"
     />
+    {% endif %}
 
     <link
       rel="apple-touch-icon"
@@ -144,8 +148,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
-    <script type="module" crossorigin src="/assets/drive/frontend/assets/index-59e50643.js"></script>
-    <link rel="stylesheet" href="/assets/drive/frontend/assets/index-ce4029c4.css">
+    <script type="module" crossorigin src="/assets/drive/frontend/assets/index-c217851e.js"></script>
+    <link rel="stylesheet" href="/assets/drive/frontend/assets/index-b0fe25c5.css">
   </head>
   <body>
     <div

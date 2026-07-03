@@ -17,7 +17,11 @@
   >
     <UsersBar
       v-if="editorValue?.storage?.collaborationCursor?.users?.length > 1"
-      :users="editorValue.storage.collaborationCursor.users"
+      :users="
+        editorValue.storage.collaborationCursor.users.filter(
+          (k) => k.name !== $store.state.user.id
+        )
+      "
     />
 
     <Button
@@ -85,7 +89,6 @@
       :editor="editor?.editor"
       :versions="entity.versions"
       @save-document="saveDocument"
-      @save-comment="saveDocument(true)"
     />
     <TextEditor
       v-if="!isFrappeDoc || docSettings?.doc?.settings"
@@ -97,12 +100,12 @@
       v-model:current="current"
       :entity
       :editable="inIframe ? false : editable"
-      :collab-turned
       :is-frappe-doc
       :settings
       :users="allUsers.data || []"
       :show-resolved
       @save-document="saveDocument"
+      @save-comment="saveDocument(true)"
       @new-version="
         (snap, duration, title) => {
           newVersion.submit({
@@ -154,6 +157,8 @@ import LucideEraser from "~icons/lucide/eraser"
 import LucideView from "~icons/lucide/view"
 import LucideSettings from "~icons/lucide/settings"
 import LucideImageDown from "~icons/lucide/image-down"
+import LucideNewspaper from "~icons/lucide/newspaper"
+import LucideDownload from "~icons/lucide/download"
 import LucideListRestart from "~icons/lucide/list-restart"
 import LucideHistory from "~icons/lucide/history"
 import MessageSquareDot from "~icons/lucide/message-square-dot"
@@ -165,6 +170,7 @@ import LucideFileWarning from "~icons/lucide/file-warning"
 import { dynamicList } from "@/utils/files"
 import { useTemplateRef } from "vue"
 import UsersBar from "@/components/UsersBar.vue"
+import { apps } from "../resources/permissions"
 
 const TextEditor = defineAsyncComponent(() =>
   import("@/components/DocEditor/TextEditor.vue")
@@ -177,7 +183,6 @@ const props = defineProps({
 
 const store = useStore()
 const showResolved = ref(false)
-const collabTurned = ref(null)
 const editor = useTemplateRef("editor")
 const editorValue = computed(() => editor.value?.editor)
 provide("editor", editorValue)
@@ -194,20 +199,30 @@ const showComments = ref(false)
 const showVersions = ref(false)
 const showSettings = ref(false)
 const edited = ref(false)
+const owner = computed(() => entity.value?.owner)
+const isOldSchema = computed(() => {
+  if (!owner.value) return false
+  return (
+    !docSettings?.doc?.settings?.collab && store.state.user.id !== owner.value
+  )
+})
+
 const editable = computed(
-  () => !!entity?.value?.write && !docSettings?.doc?.settings?.lock
+  () =>
+    !!entity?.value?.write &&
+    !docSettings?.doc?.settings?.lock &&
+    !isOldSchema.value
 )
 watch(showVersions, (v) => {
   if (!v) current.value = null
 })
-
 let docSettings, globalSettings
 const isFrappeDoc = computed(
   () => entity.value && entity.value.mime_type === "frappe_doc"
 )
 
 const saveDocument = (comment = false) => {
-  if (!edited.value || current.value) return
+  if ((!comment && !edited.value) || current.value) return
   if (entity.value.write || (comment && entity.value.comment)) {
     if (isFrappeDoc.value) {
       const params = {
@@ -334,7 +349,6 @@ const navBarActions = computed(
                 }),
               })
               $router.go()
-              collabTurned.value = val
             },
           },
           {
@@ -388,9 +402,21 @@ const navBarActions = computed(
             icon: LucideSettings,
           },
           {
-            onClick: exportMedia,
-            label: "Export Media",
-            icon: LucideImageDown,
+            label: "Export",
+            icon: LucideDownload,
+            submenu: dynamicList([
+              {
+                onClick: exportMedia,
+                label: "Export Media",
+                icon: LucideImageDown,
+              },
+              {
+                onClick: exportBlog,
+                label: "Export Blog",
+                icon: LucideNewspaper,
+                cond: apps.data && apps.data.find((k) => k.name === "blog"),
+              },
+            ]),
           },
           {
             onClick: clearCache,
@@ -420,7 +446,7 @@ const navBarActions = computed(
             icon: MessagesSquare,
             label: "Hide Comments",
             onClick: () => (showComments.value = false),
-            isEnabled: () => showComments,
+            isEnabled: () => showComments.value,
             cond: entity.value?.comments?.length,
           },
           {
@@ -446,10 +472,12 @@ const navBarActions = computed(
 )
 
 const toggleMinimal = (val) => {
+  const sidebar = window.document.querySelector("#sidebar")
+  if (!sidebar) return
   if (val) {
-    window.document.querySelector("#sidebar").style.display = "none"
+    sidebar.style.display = "none"
   } else {
-    window.document.querySelector("#sidebar").style.removeProperty("display")
+    sidebar.style.removeProperty("display")
   }
 }
 
@@ -479,7 +507,26 @@ const exportMedia = async () => {
   }
   entitiesDownload(null, urls)
 }
-
+const exportBlog = async () => {
+  toast("Starting export...")
+  createResource({
+    url: "drive.api.docs.create_blog",
+    auto: true,
+    params: {
+      entity_name: props.entityName,
+      html: editorValue.value.getHTML(),
+    },
+    onSuccess: (d) => {
+      window.open("/app/blog-post/" + d)
+    },
+    onError: (error) => {
+      toast({
+        title: error.messages[0] || "Could not export your document.",
+        type: "error",
+      })
+    },
+  })
+}
 // Events
 window.addEventListener("offline", () => {
   toast({
@@ -496,5 +543,18 @@ onBeforeUnmount(() => {
   if (edited.value) saveDocument()
   const sidebar = window.document.querySelector("#sidebar")
   if (sidebar) sidebar.style.removeProperty("display")
+})
+
+let toasted
+watch(isOldSchema, (v) => {
+  if (docSettings?.doc?.settings && entity.value.write && v && !toasted) {
+    toast({
+      title:
+        "This document uses an old schema. Collaborative editing is disabled.",
+      type: "warning",
+      duration: 8000,
+    })
+    toasted = true
+  }
 })
 </script>

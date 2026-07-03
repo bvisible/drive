@@ -19,7 +19,8 @@ class DriveUserInvitation(Document):
         if self.status == "Pending":
             try:
                 self.invite_via_email()
-            except:
+            except BaseException as e:
+                frappe.log_error(f"Failed to send invite email: {e}")
                 pass
         elif self.status == "Proposed":
             admins = frappe.get_all("Drive Team Member", filters={"parent": self.team, "access_level": 2}, pluck="user")
@@ -48,11 +49,12 @@ class DriveUserInvitation(Document):
         )
 
     def accept(self, redirect=True):
-        if self.status != "Pending":
+        if self.status not in ["Pending", "Automatic"]:
             frappe.throw("This key has already been used")
         if self.status == "Expired" or self.has_expired():
             self.status = "Expired"
             self.save(ignore_permissions=True)
+            frappe.db.commit()
             frappe.throw("Invalid or expired key")
 
         exists = frappe.db.exists(
@@ -80,13 +82,16 @@ class DriveUserInvitation(Document):
             user_exists = frappe.db.exists("User", self.email)
 
             if not user_exists:
-                url = f"/drive/signup?e={self.email}&t={frappe.db.get_value('Drive Team', self.team, 'title')}&r={req.name}"
+                team_name = frappe.db.get_value("Drive Team", self.team, "title")
+                url = f"/drive/signup?e={self.email}{'&t=' + team_name if team_name else ''}&r={req.name}"
+                if isinstance(redirect, str):
+                    url += f"&redirect-to={redirect}"
                 frappe.local.response["location"] = url
                 return
 
         # Otherwise, add the user to the team
         team = frappe.get_doc("Drive Team", self.team)
-        team.append("users", {"user": self.email})
+        team.append("users", {"user": self.email, "access_level": 0 if self.as_guest else 1})
         team.save(ignore_permissions=True)
         self.status = "Accepted"
         self.accepted_at = frappe.utils.now()
