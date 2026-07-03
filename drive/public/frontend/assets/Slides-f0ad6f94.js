@@ -1,2 +1,0 @@
-import{_ as e}from"./GenericPage-fd7730f2.js";import{p as i,g as t,l as r,a2 as a,a3 as o}from"./index-c217851e.js";import"./ListView-ac147574.js";import"./Navbar-d0dd2b24.js";import"./folder-open-dot-0e1f4ed3.js";import"./ErrorPage-8cfbb7d1.js";import"../../../../sites/common_site_config.json";const g={__name:"Slides",setup(s){return(p,n)=>(r(),i(e,{"get-entities":t(a),empty:{icon:t(o),title:"No presentations yet."}},null,8,["get-entities","empty"]))}};export{g as default};
-//# sourceMappingURL=Slides-f0ad6f94.js.map
