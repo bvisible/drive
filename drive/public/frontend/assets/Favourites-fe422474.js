@@ -1,0 +1,2 @@
+import{_ as e}from"./GenericPage-b6b11f59.js";import{p as r,g as t,l as o,Z as i,$ as a}from"./index-dc8dbd6b.js";import"./ListView-7bec1883.js";import"./Navbar-153bbc6e.js";import"./folder-open-dot-de243d84.js";import"./ErrorPage-5505d1f2.js";const v={__name:"Favourites",setup(s){return(p,n)=>(o(),r(e,{"get-entities":t(i),empty:{icon:t(a),title:"No favourites yet",description:"You can save your favourites here."}},null,8,["get-entities","empty"]))}};export{v as default};
+//# sourceMappingURL=Favourites-fe422474.js.map
